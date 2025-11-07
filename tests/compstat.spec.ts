@@ -72,6 +72,14 @@ const socrataMocks = vi.hoisted(() => {
         longitude: -96.8,
       } satisfies IncidentFeature,
     ]),
+    fetchDayOfWeekCounts: vi.fn(async () => [
+      { label: 'Sun', order: 0, count: 40 },
+      { label: 'Mon', order: 1, count: 50 },
+    ]),
+    fetchHourOfDayCounts: vi.fn(async () => [
+      { label: '00:00', order: 0, count: 10 },
+      { label: '01:00', order: 1, count: 8 },
+    ]),
   };
 });
 
@@ -84,6 +92,8 @@ const {
   fetchDistinctValues: mockFetchDistinctValues,
   fetchDailyTrend: mockFetchDailyTrend,
   fetchIncidents: mockFetchIncidents,
+  fetchDayOfWeekCounts: mockFetchDayOfWeekCounts,
+  fetchHourOfDayCounts: mockFetchHourOfDayCounts,
 } = socrataMocks;
 
 const clearAllMocks = () => {
@@ -93,6 +103,8 @@ const clearAllMocks = () => {
   mockFetchDistinctValues.mockClear();
   mockFetchDailyTrend.mockClear();
   mockFetchIncidents.mockClear();
+  mockFetchDayOfWeekCounts.mockClear();
+  mockFetchHourOfDayCounts.mockClear();
 };
 
 describe('buildCompstatResponse', () => {

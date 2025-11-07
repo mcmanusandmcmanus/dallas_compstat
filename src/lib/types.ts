@@ -31,6 +31,18 @@ export interface TrendPoint {
   lowerBand: number;
 }
 
+export interface DayOfWeekStat {
+  label: string;
+  order: number;
+  count: number;
+}
+
+export interface HourOfDayStat {
+  label: string;
+  order: number;
+  count: number;
+}
+
 export interface IncidentFeature {
   id: string;
   offense: string;
@@ -67,4 +79,6 @@ export interface CompstatResponse {
     stale: boolean;
     reason?: string;
   };
+  dayOfWeek: DayOfWeekStat[];
+  hourOfDay: HourOfDayStat[];
 }

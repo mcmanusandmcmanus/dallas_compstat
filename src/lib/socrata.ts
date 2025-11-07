@@ -263,6 +263,59 @@ export const fetchIncidents = async (
     }));
 };
 
+export const fetchDayOfWeekCounts = async (
+  range: DateRange,
+  filters: DashboardFilters,
+) => {
+  const rows = await socrataFetch<
+    Array<{ day?: string; count?: string }>
+  >({
+    $select: "day1 as day, count(incidentnum) as count",
+    $where: buildWhere(range, filters, ["day1 IS NOT NULL"]),
+    $group: "day1",
+    $order: "day",
+  });
+
+  const orderMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  return rows
+    .filter((row) => row.day)
+    .map((row) => ({
+      label: row.day!,
+      order: orderMap.indexOf(row.day!),
+      count: Number(row.count ?? 0),
+    }))
+    .filter((item) => item.order >= 0)
+    .sort((a, b) => a.order - b.order);
+};
+
+export const fetchHourOfDayCounts = async (
+  range: DateRange,
+  filters: DashboardFilters,
+) => {
+  const rows = await socrataFetch<
+    Array<{ hour?: string; count?: string }>
+  >({
+    $select:
+      "substring(time1,0,3) as hour, count(incidentnum) as count",
+    $where: buildWhere(range, filters, ["time1 IS NOT NULL"]),
+    $group: "substring(time1,0,3)",
+    $order: "hour",
+  });
+
+  return rows
+    .filter((row) => row.hour)
+    .map((row) => {
+      const hour = row.hour!.slice(0, 2);
+      const order = Number(hour);
+      return {
+        label: `${hour}:00`,
+        order: Number.isFinite(order) ? order : 0,
+        count: Number(row.count ?? 0),
+      };
+    })
+    .sort((a, b) => a.order - b.order);
+};
+
 export const getSocrataHealth = () => ({
   lastSuccess: lastSocrataSuccessISO,
   lastError: lastSocrataError,

@@ -7,8 +7,10 @@ import {
 import {
   fetchCountForRange,
   fetchDailyTrend,
+  fetchDayOfWeekCounts,
   fetchDivisions,
   fetchDistinctValues,
+  fetchHourOfDayCounts,
   fetchIncidents,
   fetchTopOffenses,
 } from "./socrata";
@@ -183,6 +185,8 @@ export const buildCompstatResponse = async (
     divisionsCurrent,
     availableDivisions,
     availableCategories,
+    dayOfWeek,
+    hourOfDay,
   ] =
     await Promise.all([
       fetchDailyTrend(focusDefinition.current, filters),
@@ -191,6 +195,8 @@ export const buildCompstatResponse = async (
       fetchDivisions(focusDefinition.current, filters),
       fetchDistinctValues("division"),
       fetchDistinctValues("nibrs_crime_category"),
+      fetchDayOfWeekCounts(focusDefinition.current, filters),
+      fetchHourOfDayCounts(focusDefinition.current, filters),
     ]);
 
   const offenseLabels = categoriesCurrent.map((row) => row.label);
@@ -244,6 +250,8 @@ export const buildCompstatResponse = async (
       divisionLeaders[0],
     ),
     meta: { stale: false },
+    dayOfWeek,
+    hourOfDay,
   };
 
   RESPONSE_CACHE.set(cacheKey, {

@@ -14,6 +14,8 @@ import { BreakdownList } from "./BreakdownList";
 import { IncidentTable } from "./IncidentTable";
 import { FocusNarrative } from "./FocusNarrative";
 import { MethodologyCard } from "./MethodologyCard";
+import { DayOfWeekChart } from "./DayOfWeekChart";
+import { HourlyPatternChart } from "./HourlyPatternChart";
 
 const fetcher = async (url: string) => {
   const response = await fetch(url);
@@ -133,6 +135,17 @@ export const Dashboard = () => {
         </div>
         <FocusNarrative
           narrative={data?.focusNarrative}
+          isLoading={isLoading && !data}
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <DayOfWeekChart
+          data={data?.dayOfWeek ?? []}
+          isLoading={isLoading && !data}
+        />
+        <HourlyPatternChart
+          data={data?.hourOfDay ?? []}
           isLoading={isLoading && !data}
         />
       </div>
