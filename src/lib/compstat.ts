@@ -27,6 +27,7 @@ const RESPONSE_CACHE = new Map<
 >();
 const RESPONSE_TTL_MS = 2 * 60 * 1000;
 const COMPSTAT_ZONE = "America/Chicago";
+let lastCompstatSuccessISO: string | null = null;
 
 const percentChange = (current: number, previous: number) => {
   if (previous === 0) {
@@ -211,8 +212,13 @@ export const buildCompstatResponse = async (
     payload: response,
     expires: Date.now() + RESPONSE_TTL_MS,
   });
+  lastCompstatSuccessISO = response.generatedAt;
 
   return response;
 };
 
 export const resetCompstatCache = () => RESPONSE_CACHE.clear();
+
+export const getCompstatHealth = () => ({
+  lastSuccess: lastCompstatSuccessISO,
+});

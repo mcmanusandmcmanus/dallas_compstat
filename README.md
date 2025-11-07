@@ -94,8 +94,11 @@ Steps:
 
 1. Push the repo to GitHub.
 2. Create a new **Web Service** in Render and point it to the repo.
-3. Add `SOCRATA_APP_TOKEN` in the Render dashboard (leave blank if you do not have one).
+3. Add environment variables in Render (Dashboard → Environment):
+   - `SOCRATA_APP_TOKEN` (recommended to raise rate limits)
+   - Any Redis/feature flags you add later
 4. Deploy. Render will execute the build/start commands and serve the production build.
+5. Optional: configure the health check endpoint to `/api/health` (added for uptime monitoring). Render will receive a 200 when both Socrata and CompStat caches are current, 503 otherwise.
 
 ## Troubleshooting
 
@@ -112,6 +115,7 @@ Steps:
 src/
  ├─ app/
  │   ├─ api/compstat/route.ts   # Socrata-backed API for UI + Render
+ │   ├─ api/health/route.ts     # Health probe for Render/monitors
  │   ├─ layout.tsx, page.tsx    # Shell + hero + dashboard entry point
  ├─ components/dashboard        # Client components (filters, cards, map, table)
  └─ lib                         # CompStat math, date windows, Socrata helpers

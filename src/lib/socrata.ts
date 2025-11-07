@@ -11,6 +11,10 @@ const DATASET_URL =
 const APP_TOKEN = process.env.SOCRATA_APP_TOKEN;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map<string, { expires: number; payload: unknown }>();
+let lastSocrataSuccessISO: string | null = null;
+let lastSocrataError:
+  | { timestamp: string; message: string; status?: number }
+  | null = null;
 
 const sanitize = (value: string) => value.replace(/'/g, "''").trim();
 
@@ -88,6 +92,11 @@ const socrataFetch = async <T>(params: Record<string, string>) => {
 
   if (!response.ok) {
     const text = await response.text();
+    lastSocrataError = {
+      timestamp: new Date().toISOString(),
+      message: text.slice(0, 200),
+      status: response.status,
+    };
     throw new Error(
       `Failed to query Socrata (${response.status}): ${text.slice(0, 200)}`,
     );
@@ -95,6 +104,8 @@ const socrataFetch = async <T>(params: Record<string, string>) => {
 
   const payload = (await response.json()) as T;
   cache.set(key, { expires: Date.now() + CACHE_TTL_MS, payload });
+  lastSocrataSuccessISO = new Date().toISOString();
+  lastSocrataError = null;
   return payload;
 };
 
@@ -251,3 +262,8 @@ export const fetchIncidents = async (
       longitude: Number(row.geocoded_column?.longitude),
     }));
 };
+
+export const getSocrataHealth = () => ({
+  lastSuccess: lastSocrataSuccessISO,
+  lastError: lastSocrataError,
+});
