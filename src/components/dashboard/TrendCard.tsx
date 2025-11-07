@@ -4,6 +4,7 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  Legend,
   Line,
   ResponsiveContainer,
   Tooltip,
@@ -134,6 +135,12 @@ export const TrendCard = ({ data, isLoading }: TrendCardProps) => {
               width={48}
             />
             <Tooltip content={<CustomTooltip />} />
+            <Legend
+              verticalAlign="top"
+              align="left"
+              iconType="circle"
+              wrapperStyle={{ color: "#e2e8f0", fontSize: 12 }}
+            />
             <Area
               type="monotone"
               dataKey="count"
@@ -147,7 +154,7 @@ export const TrendCard = ({ data, isLoading }: TrendCardProps) => {
               stroke="#fbbf24"
               strokeWidth={2}
               dot={false}
-              name="Avg"
+              name="Rolling avg"
             />
             <Line
               type="monotone"
@@ -155,7 +162,7 @@ export const TrendCard = ({ data, isLoading }: TrendCardProps) => {
               stroke="#f87171"
               strokeDasharray="4 4"
               dot={false}
-              name="Upper band"
+              name="Upper band (+3σ)"
             />
             <Line
               type="monotone"
@@ -163,7 +170,7 @@ export const TrendCard = ({ data, isLoading }: TrendCardProps) => {
               stroke="#38bdf8"
               strokeDasharray="4 4"
               dot={false}
-              name="Lower band"
+              name="Lower band (-3σ)"
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -171,4 +178,3 @@ export const TrendCard = ({ data, isLoading }: TrendCardProps) => {
     </div>
   );
 };
-
