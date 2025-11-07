@@ -1,10 +1,11 @@
-'use client';
+﻿"use client";
 
 import type { IncidentFeature } from "@/lib/types";
 
 interface IncidentTableProps {
   incidents: IncidentFeature[];
   isLoading: boolean;
+  maxRows?: number;
 }
 
 const formatDateTime = (value: string) => {
@@ -21,6 +22,7 @@ const formatDateTime = (value: string) => {
 export const IncidentTable = ({
   incidents,
   isLoading,
+  maxRows = 7,
 }: IncidentTableProps) => {
   if (isLoading && incidents.length === 0) {
     return (
@@ -28,18 +30,20 @@ export const IncidentTable = ({
     );
   }
 
+  const display = incidents.slice(0, maxRows);
+
   return (
     <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-slate-900/40 text-white shadow-lg shadow-slate-900/30">
       <header className="border-b border-white/5 px-5 py-4">
         <p className="text-sm font-semibold text-white/80">
-          Latest incidents ({incidents.length.toLocaleString()})
+          Latest incidents ({display.length.toLocaleString()} of {incidents.length.toLocaleString()})
         </p>
         <p className="text-xs text-white/60">
-          Live sample of geocoded incidents in the selected window
+          Live sample of geocoded incidents in the selected window. Showing the most recent {display.length} entries.
         </p>
       </header>
       <div className="flex-1 overflow-y-auto px-5">
-        {incidents.length === 0 ? (
+        {display.length === 0 ? (
           <p className="py-12 text-sm text-white/60">
             No mapped incidents in this view.
           </p>
@@ -54,7 +58,7 @@ export const IncidentTable = ({
               </tr>
             </thead>
             <tbody>
-              {incidents.slice(0, 50).map((incident) => (
+              {display.map((incident) => (
                 <tr
                   key={incident.id}
                   className="border-t border-white/5 text-white/80"
@@ -92,3 +96,4 @@ export const IncidentTable = ({
     </div>
   );
 };
+

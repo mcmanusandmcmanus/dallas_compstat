@@ -74,6 +74,8 @@ export interface CompstatResponse {
   topOffenses: BreakdownRow[];
   divisionLeaders: BreakdownRow[];
   incidents: IncidentFeature[];
+  incidentCategories: BreakdownRow[];
+  incidentDivisions: BreakdownRow[];
   focusNarrative: string;
   meta?: {
     stale: boolean;
@@ -82,3 +84,4 @@ export interface CompstatResponse {
   dayOfWeek: DayOfWeekStat[];
   hourOfDay: HourOfDayStat[];
 }
+

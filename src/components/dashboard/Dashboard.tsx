@@ -1,21 +1,42 @@
 "use client";
 
+
+
 import { useMemo, useState } from "react";
+
 import useSWR from "swr";
+
 import dynamic from "next/dynamic";
+
 import type {
+
   CompstatResponse,
+
   CompstatWindowId,
+
 } from "@/lib/types";
+
 import { FilterBar } from "./FilterBar";
+
 import { SummaryGrid } from "./SummaryGrid";
+
 import { TrendCard } from "./TrendCard";
+
 import { BreakdownList } from "./BreakdownList";
+
 import { IncidentTable } from "./IncidentTable";
+
 import { FocusNarrative } from "./FocusNarrative";
+
 import { MethodologyCard } from "./MethodologyCard";
+
+import { IncidentSummary } from "./IncidentSummary";
+
 import { DayOfWeekChart } from "./DayOfWeekChart";
+
 import { HourlyPatternChart } from "./HourlyPatternChart";
+
+
 
 const fetcher = async (url: string) => {
   const response = await fetch(url);
@@ -165,12 +186,20 @@ export const Dashboard = () => {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-3">
+        <div className="space-y-6 xl:col-span-2">
+          <IncidentSummary
+            categories={data?.incidentCategories ?? []}
+            divisions={data?.incidentDivisions ?? []}
+            isLoading={isLoading && !data}
+          />
+          <IncidentTable
+            incidents={data?.incidents ?? []}
+            isLoading={isLoading && !data}
+            maxRows={7}
+          />
+        </div>
         <CrimeMap incidents={data?.incidents ?? []} />
-        <IncidentTable
-          incidents={data?.incidents ?? []}
-          isLoading={isLoading && !data}
-        />
       </div>
     </section>
   );

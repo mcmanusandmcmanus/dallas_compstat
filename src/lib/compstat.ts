@@ -21,6 +21,7 @@ import type {
   CompstatWindowId,
   DashboardFilters,
   TrendPoint,
+  IncidentFeature,
 } from "./types";
 
 const RESPONSE_CACHE = new Map<
@@ -143,6 +144,18 @@ const buildNarrative = (
   return pieces.join(" ");
 };
 
+const summarizeIncidents = (items: IncidentFeature[], key: "offense" | "division"): BreakdownRow[] => {
+  const map = new Map<string, number>();
+  for (const item of items) {
+    const raw = key === "offense" ? item.offense : item.division;
+    const label = raw?.trim() || (key === "offense" ? "Unspecified offense" : "Unassigned division");
+    map.set(label, (map.get(label) ?? 0) + 1);
+  }
+  return Array.from(map.entries())
+    .map(([label, count]) => ({ label, count, changePct: 0 }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+};
 export const buildCompstatResponse = async (
   filters: DashboardFilters,
   focusRange: CompstatWindowId = DEFAULT_FOCUS_WINDOW,
@@ -201,6 +214,8 @@ export const buildCompstatResponse = async (
 
   const offenseLabels = categoriesCurrent.map((row) => row.label);
   const divisionLabels = divisionsCurrent.map((row) => row.label);
+  const incidentCategories = summarizeIncidents(incidents, "offense");
+  const incidentDivisions = summarizeIncidents(incidents, "division");
 
   const [categoriesPrevious, divisionsPrevious] = await Promise.all([
     offenseLabels.length
@@ -242,6 +257,8 @@ export const buildCompstatResponse = async (
     windows: windowMetrics,
     trend: enrichTrend(trendRaw),
     incidents,
+    incidentCategories,
+    incidentDivisions,
     topOffenses,
     divisionLeaders,
     focusNarrative: buildNarrative(
@@ -268,3 +285,7 @@ export const resetCompstatCache = () => RESPONSE_CACHE.clear();
 export const getCompstatHealth = () => ({
   lastSuccess: lastCompstatSuccessISO,
 });
+
+
+
+
