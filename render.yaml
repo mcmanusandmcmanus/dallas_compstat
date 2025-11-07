@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: dallas-compstat
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    rootDir: .
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NEXT_PUBLIC_APP_ENV
+        value: production
+      - key: SOCRATA_APP_TOKEN
+        sync: false
