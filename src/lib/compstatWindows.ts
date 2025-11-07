@@ -40,32 +40,48 @@ const toRange = (start: DateTime, end: DateTime): DateRange => ({
 const fixedLengthRange = (
   days: number,
   now: DateTime,
-): { current: DateRange; previous: DateRange; days: number } => {
+): {
+  current: DateRange;
+  previous: DateRange;
+  yearAgo: DateRange;
+  days: number;
+} => {
   const currentEnd = now.endOf("day");
   const currentStart = currentEnd.minus({ days: days - 1 }).startOf("day");
   const previousEnd = currentStart.minus({ days: 1 }).endOf("day");
   const previousStart = previousEnd.minus({ days: days - 1 }).startOf("day");
+  const yearAgoStart = currentStart.minus({ years: 1 });
+  const yearAgoEnd = currentEnd.minus({ years: 1 });
 
   return {
     current: toRange(currentStart, currentEnd),
     previous: toRange(previousStart, previousEnd),
+    yearAgo: toRange(yearAgoStart, yearAgoEnd),
     days,
   };
 };
 
 const ytdRange = (
   now: DateTime,
-): { current: DateRange; previous: DateRange; days: number } => {
+): {
+  current: DateRange;
+  previous: DateRange;
+  yearAgo: DateRange;
+  days: number;
+} => {
   const currentStart = now.startOf("year");
   const currentEnd = now.endOf("day");
   const days =
     Math.floor(currentEnd.diff(currentStart, "days").days) + 1;
   const previousEnd = currentStart.minus({ days: 1 }).endOf("day");
   const previousStart = previousEnd.minus({ days: days - 1 }).startOf("day");
+  const yearAgoStart = currentStart.minus({ years: 1 });
+  const yearAgoEnd = currentEnd.minus({ years: 1 });
 
   return {
     current: toRange(currentStart, currentEnd),
     previous: toRange(previousStart, previousEnd),
+    yearAgo: toRange(yearAgoStart, yearAgoEnd),
     days,
   };
 };
@@ -98,4 +114,3 @@ export const getAllWindowDefinitions = (
     getWindowDefinition(key, reference),
   );
 };
-

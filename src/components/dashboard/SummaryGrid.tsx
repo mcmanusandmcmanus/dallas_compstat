@@ -34,6 +34,11 @@ const SummaryCard = ({
   const deltaColor = positive ? "text-emerald-300" : "text-rose-300";
   const arrow = positive ? "▲" : "▼";
 
+  const deltaYear = metric.changePctYearAgo;
+  const yearPositive = deltaYear >= 0;
+  const yearColor = yearPositive ? "text-sky-300" : "text-rose-300";
+  const yearArrow = yearPositive ? "▲" : "▼";
+
   return (
     <div
       className={clsx(
@@ -63,10 +68,15 @@ const SummaryCard = ({
       </p>
 
       <div className="mt-6 flex items-center justify-between text-sm text-white/70">
-        <span className={clsx("font-semibold", deltaColor)}>
-          {arrow} {Math.abs(delta).toFixed(1)}%
-        </span>
-        <span className="text-xs">
+        <div className="flex flex-col gap-1 text-xs">
+          <span className={clsx("font-semibold", deltaColor)}>
+            {arrow} {Math.abs(delta).toFixed(1)}% vs prior period
+          </span>
+          <span className={clsx("font-semibold", yearColor)}>
+            {yearArrow} {Math.abs(deltaYear).toFixed(1)}% vs same time last year
+          </span>
+        </div>
+        <span className="text-xs font-semibold text-white/80">
           z = {metric.zScore.toFixed(1)}
         </span>
       </div>
@@ -104,4 +114,3 @@ export const SummaryGrid = ({
     </div>
   );
 };
-

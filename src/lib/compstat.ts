@@ -69,11 +69,16 @@ const poissonZ = (current: number, previous: number) => {
   if (current === 0 && previous === 0) {
     return 0;
   }
-  return 2 * (Math.sqrt(current) - Math.sqrt(previous));
+  const useAnscombe = current < 10 || previous < 10;
+  const transform = (value: number) =>
+    useAnscombe ? Math.sqrt(value + 0.375) : Math.sqrt(value);
+  const currentRoot = transform(current);
+  const previousRoot = transform(previous);
+  return 2 * (currentRoot - previousRoot);
 };
 
 const zBand = (value: number) => {
-  if (value >= 3) return "Spike";
+  if (value >= 3.5) return "Spike";
   if (value >= 1) return "Elevated";
   if (value <= -1) return "Below Normal";
   return "Normal";
@@ -152,7 +157,9 @@ export const buildCompstatResponse = async (
     windowDefinitions.map(async (definition) => {
       const current = await fetchCountForRange(definition.current, filters);
       const previous = await fetchCountForRange(definition.previous, filters);
+      const yearAgo = await fetchCountForRange(definition.yearAgo, filters);
       const changePct = percentChange(current, previous);
+      const changePctYearAgo = percentChange(current, yearAgo);
       const zScore = poissonZ(current, previous);
       return {
         id: definition.id,
@@ -160,6 +167,8 @@ export const buildCompstatResponse = async (
         current,
         previous,
         changePct,
+        yearAgo,
+        changePctYearAgo,
         zScore,
         classification: zBand(zScore),
       };

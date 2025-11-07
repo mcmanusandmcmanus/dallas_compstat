@@ -17,6 +17,8 @@ export interface CompstatMetric {
   current: number;
   previous: number;
   changePct: number;
+  yearAgo: number;
+  changePctYearAgo: number;
   zScore: number;
   classification: "Spike" | "Elevated" | "Normal" | "Below Normal";
 }
