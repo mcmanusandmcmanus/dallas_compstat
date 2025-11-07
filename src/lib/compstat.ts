@@ -29,6 +29,35 @@ const RESPONSE_TTL_MS = 2 * 60 * 1000;
 const COMPSTAT_ZONE = "America/Chicago";
 let lastCompstatSuccessISO: string | null = null;
 
+const buildCacheKey = (
+  filters: DashboardFilters,
+  focusRange: CompstatWindowId,
+) => JSON.stringify({ filters, focusRange });
+
+const getCachedEntry = (
+  filters: DashboardFilters,
+  focusRange: CompstatWindowId,
+) => {
+  const key = buildCacheKey(filters, focusRange);
+  const cached = RESPONSE_CACHE.get(key);
+  return { key, cached };
+};
+
+export const getCachedCompstatResponse = (
+  filters: DashboardFilters,
+  focusRange: CompstatWindowId,
+  options: { allowStale?: boolean } = {},
+) => {
+  const { cached } = getCachedEntry(filters, focusRange);
+  if (!cached) {
+    return null;
+  }
+  if (!options.allowStale && cached.expires <= Date.now()) {
+    return null;
+  }
+  return cached.payload;
+};
+
 const percentChange = (current: number, previous: number) => {
   if (previous === 0) {
     return current === 0 ? 0 : 100;
@@ -111,8 +140,7 @@ export const buildCompstatResponse = async (
   filters: DashboardFilters,
   focusRange: CompstatWindowId = DEFAULT_FOCUS_WINDOW,
 ): Promise<CompstatResponse> => {
-  const cacheKey = JSON.stringify({ filters, focusRange });
-  const cached = RESPONSE_CACHE.get(cacheKey);
+  const { key: cacheKey, cached } = getCachedEntry(filters, focusRange);
   if (cached && cached.expires > Date.now()) {
     return cached.payload;
   }
@@ -206,6 +234,7 @@ export const buildCompstatResponse = async (
       topOffenses[0],
       divisionLeaders[0],
     ),
+    meta: { stale: false },
   };
 
   RESPONSE_CACHE.set(cacheKey, {

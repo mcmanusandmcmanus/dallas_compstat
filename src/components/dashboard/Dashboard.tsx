@@ -100,6 +100,18 @@ export const Dashboard = () => {
         onReset={resetFilters}
       />
 
+      {data?.meta?.stale ? (
+        <div className="rounded-2xl border border-amber-300/40 bg-amber-500/10 p-4 text-sm text-amber-50 shadow-lg shadow-amber-900/30">
+          <p className="font-semibold text-amber-200">
+            Live data temporarily unavailable
+          </p>
+          <p className="mt-1 text-amber-100/80">
+            {data.meta.reason ??
+              "Showing the last cached snapshot until Socrata is reachable again."}
+          </p>
+        </div>
+      ) : null}
+
       <SummaryGrid
         metrics={data?.windows ?? []}
         isLoading={isLoading && !data}
@@ -146,4 +158,3 @@ export const Dashboard = () => {
 };
 
 export default Dashboard;
-

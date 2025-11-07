@@ -61,5 +61,8 @@ export interface CompstatResponse {
   divisionLeaders: BreakdownRow[];
   incidents: IncidentFeature[];
   focusNarrative: string;
+  meta?: {
+    stale: boolean;
+    reason?: string;
+  };
 }
-
