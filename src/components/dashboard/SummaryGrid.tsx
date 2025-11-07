@@ -32,12 +32,12 @@ const SummaryCard = ({
   const delta = metric.changePct;
   const positive = delta >= 0;
   const deltaColor = positive ? "text-emerald-300" : "text-rose-300";
-  const arrow = positive ? "▲" : "▼";
+  const arrow = positive ? "↑" : "↓";
 
   const deltaYear = metric.changePctYearAgo;
   const yearPositive = deltaYear >= 0;
   const yearColor = yearPositive ? "text-sky-300" : "text-rose-300";
-  const yearArrow = yearPositive ? "▲" : "▼";
+  const yearArrow = yearPositive ? "↑" : "↓";
 
   return (
     <div
@@ -69,10 +69,16 @@ const SummaryCard = ({
 
       <div className="mt-6 flex items-center justify-between text-sm text-white/70">
         <div className="flex flex-col gap-1 text-xs">
-          <span className={clsx("font-semibold", deltaColor)}>
+          <span
+            className={clsx("font-semibold", deltaColor)}
+            title="Percent change compared to the immediately preceding window."
+          >
             {arrow} {Math.abs(delta).toFixed(1)}% vs prior period
           </span>
-          <span className={clsx("font-semibold", yearColor)}>
+          <span
+            className={clsx("font-semibold", yearColor)}
+            title="Percent change compared to the same dates one year ago."
+          >
             {yearArrow} {Math.abs(deltaYear).toFixed(1)}% vs same time last year
           </span>
         </div>

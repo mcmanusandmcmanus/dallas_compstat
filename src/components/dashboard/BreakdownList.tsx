@@ -59,6 +59,7 @@ export const BreakdownList = ({
                 </div>
                 <span
                   className={`text-xs font-semibold ${deltaClass}`}
+                  title="Percent change relative to the immediately preceding window."
                 >
                   {delta >= 0 ? "+" : "-"}
                   {Math.abs(delta).toFixed(1)}%

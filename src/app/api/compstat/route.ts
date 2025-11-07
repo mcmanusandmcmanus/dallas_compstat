@@ -13,6 +13,10 @@ const isWindowId = (value: string): value is CompstatWindowId =>
 const cleanFilter = (value: string | null) =>
   value && value !== "ALL" ? value.trim() : undefined;
 
+const CACHE_HEADERS = {
+  "Cache-Control": "public, max-age=30, s-maxage=120, stale-while-revalidate=60",
+};
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const focusParam = searchParams.get("focusRange") ?? "";
@@ -32,27 +36,33 @@ export async function GET(request: Request) {
       filterPayload,
       focusRange,
     );
-    return NextResponse.json(payload);
+    return NextResponse.json(payload, { headers: CACHE_HEADERS });
   } catch (error) {
     console.error("Failed to build CompStat response", error);
     const stale = getCachedCompstatResponse(filterPayload, focusRange, {
       allowStale: true,
     });
     if (stale) {
-      return NextResponse.json({
-        ...stale,
-        meta: {
-          ...(stale.meta ?? {}),
-          stale: true,
-          reason:
-            stale.meta?.reason ??
-            "Live data is unavailable; showing the last cached snapshot.",
+      return NextResponse.json(
+        {
+          ...stale,
+          meta: {
+            ...(stale.meta ?? {}),
+            stale: true,
+            reason:
+              stale.meta?.reason ??
+              "Live data is unavailable; showing the last cached snapshot.",
+          },
         },
-      });
+        { headers: CACHE_HEADERS },
+      );
     }
     return NextResponse.json(
       { error: "Unable to load CompStat data at this time." },
-      { status: 500 },
+      {
+        status: 500,
+        headers: { "Cache-Control": "no-store" },
+      },
     );
   }
 }

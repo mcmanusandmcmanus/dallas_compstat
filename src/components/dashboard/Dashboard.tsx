@@ -46,6 +46,13 @@ const fetcher = async (url: string) => {
   return (await response.json()) as CompstatResponse;
 };
 
+const SWR_OPTIONS = {
+  revalidateOnFocus: false,
+  dedupingInterval: 120_000,
+  refreshInterval: 120_000,
+  keepPreviousData: true,
+};
+
 const CrimeMap = dynamic(
   () => import("./CrimeMap").then((mod) => mod.CrimeMap),
   {
@@ -81,7 +88,7 @@ export const Dashboard = () => {
   const { data, error, isLoading } = useSWR<CompstatResponse>(
     `/api/compstat?${query}`,
     fetcher,
-    { revalidateOnFocus: false },
+    SWR_OPTIONS,
   );
 
   const availableDivisions = withAllOption(

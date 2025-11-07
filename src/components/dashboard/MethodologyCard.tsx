@@ -45,13 +45,14 @@ export const MethodologyCard = ({
           </span>{" "}
           Summary tiles compare current 7d/28d/YTD/365d totals against the
           immediately prior window <em>and</em> the same dates one year ago.
+          Percent change = (current - comparison) / comparison * 100.
         </li>
         <li>
           <span className="font-semibold text-white">
             Significance.
           </span>{" "}
           Poisson z-scores use an Anscombe transform for counts under 10.
-          {""} Spike ≥ 3.5, Elevated ≥ 1.0. Bands in the trend card show ±3σ
+          Spike >= 3.5, Elevated >= 1.0. Bands in the trend card show +/- 3 sigma
           around the rolling average.
         </li>
         <li>

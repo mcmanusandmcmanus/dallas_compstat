@@ -162,7 +162,7 @@ export const TrendCard = ({ data, isLoading }: TrendCardProps) => {
               stroke="#f87171"
               strokeDasharray="4 4"
               dot={false}
-              name="Upper band (+3σ)"
+              name="Upper band (+3 sigma)"
             />
             <Line
               type="monotone"
@@ -170,7 +170,7 @@ export const TrendCard = ({ data, isLoading }: TrendCardProps) => {
               stroke="#38bdf8"
               strokeDasharray="4 4"
               dot={false}
-              name="Lower band (-3σ)"
+              name="Lower band (-3 sigma)"
             />
           </AreaChart>
         </ResponsiveContainer>

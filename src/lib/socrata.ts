@@ -11,6 +11,8 @@ const DATASET_URL =
 const APP_TOKEN = process.env.SOCRATA_APP_TOKEN;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map<string, { expires: number; payload: unknown }>();
+const DISTINCT_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const distinctCache = new Map<string, { expires: number; values: string[] }>();
 let lastSocrataSuccessISO: string | null = null;
 let lastSocrataError:
   | { timestamp: string; message: string; status?: number }
@@ -182,6 +184,12 @@ export const fetchDivisions = async (
 };
 
 export const fetchDistinctValues = async (field: string) => {
+  const now = Date.now();
+  const cached = distinctCache.get(field);
+  if (cached && cached.expires > now) {
+    return cached.values;
+  }
+
   const rows = await socrataFetch<Array<Record<string, string>>>({
     $select: `${field}`,
     $where: `${field} IS NOT NULL`,
@@ -190,9 +198,16 @@ export const fetchDistinctValues = async (field: string) => {
     $limit: "50",
   });
 
-  return rows
+  const values = rows
     .map((row) => row[field])
     .filter((value): value is string => Boolean(value));
+
+  distinctCache.set(field, {
+    values,
+    expires: now + DISTINCT_CACHE_TTL_MS,
+  });
+
+  return values;
 };
 
 export const fetchDailyTrend = async (
