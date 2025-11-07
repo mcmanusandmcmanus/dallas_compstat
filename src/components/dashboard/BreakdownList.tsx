@@ -7,6 +7,8 @@ interface BreakdownListProps {
   items: BreakdownRow[];
   isLoading: boolean;
   emptyLabel: string;
+  onSelectItem?: (label: string) => void;
+  selectedLabel?: string;
 }
 
 export const BreakdownList = ({
@@ -14,6 +16,8 @@ export const BreakdownList = ({
   items,
   isLoading,
   emptyLabel,
+  onSelectItem,
+  selectedLabel,
 }: BreakdownListProps) => {
   if (isLoading && items.length === 0) {
     return (
@@ -25,8 +29,13 @@ export const BreakdownList = ({
 
   return (
     <section className="rounded-2xl border border-white/10 bg-slate-900/40 p-5 text-white shadow-lg shadow-slate-900/30">
-      <header className="flex items-center justify-between text-sm text-white/70">
-        <p className="font-semibold">{title}</p>
+      <header className="flex flex-wrap items-center justify-between gap-2 text-sm text-white/70">
+        <div className="flex flex-col">
+          <p className="font-semibold">{title}</p>
+          <span className="text-xs uppercase tracking-widest text-emerald-200">
+            Current focus window
+          </span>
+        </div>
         <p className="text-white/50">Top {items.length}</p>
       </header>
       <div className="mt-4 space-y-4">
@@ -42,14 +51,28 @@ export const BreakdownList = ({
           const deltaClass =
             delta >= 0 ? "text-emerald-300" : "text-rose-300";
 
+          const isSelected =
+            selectedLabel &&
+            item.label.toLowerCase() === selectedLabel.toLowerCase();
+          const clickable = Boolean(onSelectItem);
+
           return (
             <div key={item.label}>
-              <div className="flex items-center justify-between text-sm text-white/80">
-                <p className="font-medium">{item.label}</p>
-                <p className="font-semibold">
+              <button
+                type="button"
+                disabled={!clickable}
+                onClick={() => onSelectItem?.(item.label)}
+                className={`flex w-full items-center justify-between rounded-xl px-2 py-1 text-left text-sm transition ${
+                  clickable
+                    ? "hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300"
+                    : ""
+                } ${isSelected ? "bg-white/5 text-emerald-200" : "text-white/80"}`}
+              >
+                <span className="font-medium">{item.label}</span>
+                <span className="font-semibold text-white">
                   {item.count.toLocaleString()}
-                </p>
-              </div>
+                </span>
+              </button>
               <div className="mt-2 flex h-2 items-center gap-2">
                 <div className="h-full w-full rounded-full bg-white/10">
                   <div

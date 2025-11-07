@@ -114,3 +114,9 @@ export const getAllWindowDefinitions = (
     getWindowDefinition(key, reference),
   );
 };
+
+export const buildRangeFromDates = (start: DateTime, end: DateTime): DateRange => {
+  const normalizedStart = start.startOf("day");
+  const normalizedEnd = end.endOf("day");
+  return toRange(normalizedStart, normalizedEnd);
+};

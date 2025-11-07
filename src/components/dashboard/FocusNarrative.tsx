@@ -21,9 +21,14 @@ export const FocusNarrative = ({
         <p className="text-sm uppercase tracking-wide text-white/60">
           Analyst highlight
         </p>
-        <h3 className="mt-1 text-2xl font-semibold">
-          CompStat focus
-        </h3>
+        <div className="mt-1 flex flex-wrap items-center gap-3">
+          <h3 className="text-2xl font-semibold">
+            CompStat focus
+          </h3>
+          <span className="text-xs uppercase tracking-widest text-emerald-200">
+            Current focus window
+          </span>
+        </div>
       </header>
       <p className="mt-4 flex-1 text-base leading-relaxed text-white/80">
         {narrative ??

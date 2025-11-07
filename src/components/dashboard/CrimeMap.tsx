@@ -16,6 +16,8 @@ import "leaflet/dist/leaflet.css";
 
 interface CrimeMapProps {
   incidents: IncidentFeature[];
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 const DEFAULT_CENTER: LatLngExpression = [32.7767, -96.797];
@@ -40,7 +42,11 @@ const computeBounds = (
   return [southWest, northEast];
 };
 
-export const CrimeMap = ({ incidents }: CrimeMapProps) => {
+export const CrimeMap = ({
+  incidents,
+  isExpanded = false,
+  onToggleExpand,
+}: CrimeMapProps) => {
   const bounds = useMemo(
     () => computeBounds(incidents),
     [incidents],
@@ -51,17 +57,35 @@ export const CrimeMap = ({ incidents }: CrimeMapProps) => {
       ? DEFAULT_CENTER
       : [incidents[0].latitude, incidents[0].longitude];
 
+  const mapHeight = isExpanded ? "h-[520px]" : "h-[360px]";
+
   return (
     <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-5 text-white shadow-lg shadow-slate-900/30">
-      <header>
-        <p className="text-sm font-semibold text-white/80">
-          Hot spot map
-        </p>
-        <p className="text-xs text-white/50">
-          Geocoded incidents in the selected window
-        </p>
+      <header className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-white/80">
+            Hot spot map
+          </p>
+          <p className="text-xs uppercase tracking-widest text-emerald-200">
+            Current focus window
+          </p>
+          <p className="text-xs text-white/50">
+            Geocoded incidents in the selected window
+          </p>
+        </div>
+        {onToggleExpand ? (
+          <button
+            type="button"
+            onClick={onToggleExpand}
+            className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80 transition hover:border-emerald-300 hover:text-white"
+          >
+            {isExpanded ? "Collapse map" : "Expand map"}
+          </button>
+        ) : null}
       </header>
-      <div className="mt-4 h-[360px] w-full overflow-hidden rounded-xl border border-white/5">
+      <div
+        className={`mt-4 ${mapHeight} w-full overflow-hidden rounded-xl border border-white/5`}
+      >
         <MapContainer
           center={center}
           bounds={bounds}

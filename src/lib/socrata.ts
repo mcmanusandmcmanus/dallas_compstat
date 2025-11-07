@@ -213,7 +213,9 @@ export const fetchDistinctValues = async (field: string) => {
 export const fetchDailyTrend = async (
   range: DateRange,
   filters: DashboardFilters,
+  options: { limit?: number } = {},
 ): Promise<Array<{ day: string; count: number }>> => {
+  const limit = options.limit ?? 400;
   const rows = await socrataFetch<
     Array<{ day?: string; count?: string }>
   >({
@@ -222,7 +224,7 @@ export const fetchDailyTrend = async (
     $where: buildWhere(range, filters),
     $group: "substring(date1,0,11)",
     $order: "day",
-    $limit: "400",
+    $limit: String(limit),
   });
 
   return rows

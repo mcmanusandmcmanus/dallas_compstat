@@ -42,8 +42,13 @@ export const IncidentSummary = ({
 
   return (
     <section className="rounded-2xl border border-white/10 bg-slate-950/40 p-5 text-white shadow-lg shadow-slate-900/30">
-      <header className="flex items-center justify-between text-sm text-white/70">
-        <p className="font-semibold">Latest incidents overview</p>
+      <header className="flex flex-wrap items-center justify-between gap-2 text-sm text-white/70">
+        <div>
+          <p className="font-semibold">Latest incidents overview</p>
+          <p className="text-xs uppercase tracking-widest text-emerald-200">
+            Current focus window
+          </p>
+        </div>
         <p className="text-xs text-white/50">Top groupings from the sampled incidents</p>
       </header>
       <div className="mt-4 grid gap-4 md:grid-cols-2">

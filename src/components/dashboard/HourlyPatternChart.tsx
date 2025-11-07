@@ -45,7 +45,9 @@ export const HourlyPatternChart = ({
     <section className="rounded-2xl border border-white/10 bg-slate-900/40 p-5 text-white shadow-lg shadow-slate-900/30">
       <header className="flex flex-wrap items-center justify-between text-sm text-white/70">
         <p className="font-semibold">Hourly cadence</p>
-        <p className="text-xs">Current focus window</p>
+        <p className="text-xs uppercase tracking-widest text-emerald-200">
+          Current focus window
+        </p>
       </header>
       <div className="mt-4 h-56 w-full">
         <ResponsiveContainer width="100%" height="100%">

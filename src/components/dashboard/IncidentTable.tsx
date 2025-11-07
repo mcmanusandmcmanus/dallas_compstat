@@ -38,6 +38,9 @@ export const IncidentTable = ({
         <p className="text-sm font-semibold text-white/80">
           Latest incidents ({display.length.toLocaleString()} of {incidents.length.toLocaleString()})
         </p>
+        <p className="text-xs uppercase tracking-widest text-emerald-200">
+          Current focus window
+        </p>
         <p className="text-xs text-white/60">
           Live sample of geocoded incidents in the selected window. Showing the most recent {display.length} entries.
         </p>

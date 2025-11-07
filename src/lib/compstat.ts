@@ -1,6 +1,7 @@
 import { DateTime } from "luxon";
 import {
   DEFAULT_FOCUS_WINDOW,
+  buildRangeFromDates,
   getAllWindowDefinitions,
   getWindowDefinition,
 } from "./compstatWindows";
@@ -101,21 +102,73 @@ const mergeBreakdowns = (
   });
 };
 
-const enrichTrend = (series: Array<{ day: string; count: number }>): TrendPoint[] => {
-  const window = 7;
-  return series.map((point, index, src) => {
-    const start = Math.max(0, index - window + 1);
-    const slice = src.slice(start, index + 1);
-    const mean = slice.reduce((sum, item) => sum + item.count, 0) / slice.length;
-    const std = Math.sqrt(Math.max(mean, 0));
-    return {
-      date: point.day,
-      count: point.count,
-      rollingAverage: Number(mean.toFixed(1)),
-      upperBand: Number((mean + 3 * std).toFixed(1)),
-      lowerBand: Number(Math.max(mean - 3 * std, 0).toFixed(1)),
-    };
-  });
+const PRIOR_WEEKS = 8;
+const HISTORY_YEARS = 3;
+
+const buildWeeklyTrend = (series: Array<{ day: string; count: number }>): TrendPoint[] => {
+  if (!series.length) {
+    return [];
+  }
+
+  const sorted = [...series].sort((a, b) => a.day.localeCompare(b.day));
+  const firstDay = DateTime.fromISO(sorted[0].day, { zone: COMPSTAT_ZONE }).startOf("day");
+  const lastDay = DateTime.fromISO(sorted[sorted.length - 1].day, {
+    zone: COMPSTAT_ZONE,
+  }).startOf("day");
+
+  const weekdayIndex = firstDay.weekday - 1;
+  const beginWeek = firstDay.plus({ days: 7 - weekdayIndex });
+
+  if (beginWeek >= lastDay) {
+    return [];
+  }
+
+  const totalWeeks = Math.floor(lastDay.diff(beginWeek, "days").days / 7);
+  if (totalWeeks <= PRIOR_WEEKS) {
+    return [];
+  }
+
+  const weekSpanEnd = beginWeek.plus({ days: totalWeeks * 7 });
+  const weekCounts = new Array(totalWeeks).fill(0);
+
+  for (const point of sorted) {
+    const current = DateTime.fromISO(point.day, { zone: COMPSTAT_ZONE }).startOf("day");
+    if (current < beginWeek || current >= weekSpanEnd) {
+      continue;
+    }
+    const diffWeeks = Math.floor(current.diff(beginWeek, "days").days / 7);
+    if (diffWeeks >= 0 && diffWeeks < totalWeeks) {
+      weekCounts[diffWeeks] += point.count;
+    }
+  }
+
+  const prefixSums = new Array(totalWeeks + 1).fill(0);
+  for (let index = 0; index < totalWeeks; index++) {
+    prefixSums[index + 1] = prefixSums[index] + weekCounts[index];
+  }
+
+  const trend: TrendPoint[] = [];
+  for (let index = PRIOR_WEEKS; index < totalWeeks; index++) {
+    const weekStart = beginWeek.plus({ days: index * 7 });
+    const weekEnd = weekStart.plus({ days: 6 });
+    const current = weekCounts[index];
+    const priorSum = prefixSums[index] - prefixSums[index - PRIOR_WEEKS];
+    const priorAverage = priorSum / PRIOR_WEEKS;
+    const sqrtAvg = Math.sqrt(Math.max(priorAverage, 0));
+    const lowerBound = Math.max(Math.pow(-1.5 + sqrtAvg, 2), 0);
+    const upperBound = Math.pow(1.5 + sqrtAvg, 2);
+
+    trend.push({
+      date: weekStart.toISODate() ?? weekStart.toFormat("yyyy-LL-dd"),
+      endDate: weekEnd.toISODate() ?? weekEnd.toFormat("yyyy-LL-dd"),
+      count: current,
+      rollingAverage: Number(priorAverage.toFixed(1)),
+      lowerBand: Number(lowerBound.toFixed(1)),
+      upperBand: Number(upperBound.toFixed(1)),
+    });
+  }
+
+  return trend;
 };
 
 const buildNarrative = (
@@ -191,8 +244,14 @@ export const buildCompstatResponse = async (
   );
 
   const focusDefinition = getWindowDefinition(focusRange, reference);
+  const historyEnd = reference.endOf("day");
+  const historyStart = historyEnd.minus({ years: HISTORY_YEARS }).startOf("day");
+  const historyRange = buildRangeFromDates(historyStart, historyEnd);
+  const historyDays =
+    Math.floor(historyEnd.diff(historyStart, "days").days) + 1;
+  const historyLimit = Math.max(historyDays + 7, 500);
   const [
-    trendRaw,
+    trendHistory,
     incidents,
     categoriesCurrent,
     divisionsCurrent,
@@ -202,7 +261,7 @@ export const buildCompstatResponse = async (
     hourOfDay,
   ] =
     await Promise.all([
-      fetchDailyTrend(focusDefinition.current, filters),
+      fetchDailyTrend(historyRange, filters, { limit: historyLimit }),
       fetchIncidents(focusDefinition.current, filters),
       fetchTopOffenses(focusDefinition.current, filters),
       fetchDivisions(focusDefinition.current, filters),
@@ -255,7 +314,7 @@ export const buildCompstatResponse = async (
       availableCategories,
     },
     windows: windowMetrics,
-    trend: enrichTrend(trendRaw),
+    trend: buildWeeklyTrend(trendHistory),
     incidents,
     incidentCategories,
     incidentDivisions,

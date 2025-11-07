@@ -2,19 +2,13 @@
 
 
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import useSWR from "swr";
 
 import dynamic from "next/dynamic";
 
-import type {
-
-  CompstatResponse,
-
-  CompstatWindowId,
-
-} from "@/lib/types";
+import type { CompstatResponse, CompstatWindowId } from "@/lib/types";
 
 import { FilterBar } from "./FilterBar";
 
@@ -68,22 +62,26 @@ const withAllOption = (items: string[]) => [
   ...items.filter((item) => item && item.trim().length > 0),
 ];
 
+const BASE_FILTERS = {
+  focusRange: "28d" as CompstatWindowId,
+  division: "ALL",
+  offenseCategory: "ALL",
+};
+
 export const Dashboard = () => {
-  const [focusRange, setFocusRange] =
-    useState<CompstatWindowId>("28d");
-  const [division, setDivision] = useState("ALL");
-  const [category, setCategory] = useState("ALL");
+  const [filters, setFilters] = useState(BASE_FILTERS);
+  const [mapExpanded, setMapExpanded] = useState(false);
 
   const query = useMemo(() => {
-    const params = new URLSearchParams({ focusRange });
-    if (division !== "ALL") {
-      params.set("division", division);
+    const params = new URLSearchParams({ focusRange: filters.focusRange });
+    if (filters.division !== "ALL") {
+      params.set("division", filters.division);
     }
-    if (category !== "ALL") {
-      params.set("offenseCategory", category);
+    if (filters.offenseCategory !== "ALL") {
+      params.set("offenseCategory", filters.offenseCategory);
     }
     return params.toString();
-  }, [focusRange, division, category]);
+  }, [filters]);
 
   const { data, error, isLoading } = useSWR<CompstatResponse>(
     `/api/compstat?${query}`,
@@ -98,9 +96,26 @@ export const Dashboard = () => {
     data?.filters.availableCategories ?? [],
   );
 
-  const resetFilters = () => {
-    setDivision("ALL");
-    setCategory("ALL");
+  const updateFilters = useCallback(
+    (patch: Partial<typeof BASE_FILTERS>) => {
+      setFilters((prev) => ({ ...prev, ...patch }));
+    },
+    [],
+  );
+
+  const resetFilters = () => setFilters(BASE_FILTERS);
+
+  const handleFocusChange = (value: CompstatWindowId) =>
+    updateFilters({ focusRange: value });
+
+  const handleDivisionChange = (value: string) =>
+    updateFilters({ division: value });
+
+  const handleCategoryChange = (value: string) =>
+    updateFilters({ offenseCategory: value });
+
+  const handleCategoryDrilldown = (value: string) => {
+    updateFilters({ offenseCategory: value });
   };
 
   if (error) {
@@ -118,13 +133,43 @@ export const Dashboard = () => {
 
   return (
     <section className="flex flex-col gap-8">
+      <header className="flex flex-col gap-4">
+        <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">
+          Dallas Police Department
+        </p>
+        <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
+          CompStat Command Brief
+        </h1>
+        <p className="text-base text-white/70 md:text-lg">
+          Real-time NIBRS offenses, spatial hot spots, and Poisson significance bands built directly on the City of Dallas open
+          dataset. Adjust the division, offense mix, or time horizon to generate a meeting-ready brief in seconds.
+        </p>
+      </header>
+
+      <SummaryGrid
+        metrics={data?.windows ?? []}
+        isLoading={isLoading && !data}
+        focusRange={filters.focusRange}
+      />
+
+      <TrendCard
+        data={data?.trend ?? []}
+        isLoading={isLoading && !data}
+      />
+
+      <CrimeMap
+        incidents={data?.incidents ?? []}
+        isExpanded={mapExpanded}
+        onToggleExpand={() => setMapExpanded((prev) => !prev)}
+      />
+
       <FilterBar
-        focusRange={focusRange}
-        onFocusRangeChange={setFocusRange}
-        division={division}
-        offenseCategory={category}
-        onDivisionChange={setDivision}
-        onOffenseChange={setCategory}
+        focusRange={filters.focusRange}
+        onFocusRangeChange={handleFocusChange}
+        division={filters.division}
+        offenseCategory={filters.offenseCategory}
+        onDivisionChange={handleDivisionChange}
+        onOffenseChange={handleCategoryChange}
         availableDivisions={availableDivisions}
         availableCategories={availableCategories}
         isBusy={isLoading && !data}
@@ -148,24 +193,10 @@ export const Dashboard = () => {
         isStale={data?.meta?.stale}
       />
 
-      <SummaryGrid
-        metrics={data?.windows ?? []}
+      <FocusNarrative
+        narrative={data?.focusNarrative}
         isLoading={isLoading && !data}
-        focusRange={focusRange}
       />
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <TrendCard
-            data={data?.trend ?? []}
-            isLoading={isLoading && !data}
-          />
-        </div>
-        <FocusNarrative
-          narrative={data?.focusNarrative}
-          isLoading={isLoading && !data}
-        />
-      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <DayOfWeekChart
@@ -184,6 +215,12 @@ export const Dashboard = () => {
           items={data?.topOffenses ?? []}
           isLoading={isLoading && !data}
           emptyLabel="No offenses recorded in this window."
+          onSelectItem={handleCategoryDrilldown}
+          selectedLabel={
+            filters.offenseCategory !== "ALL"
+              ? filters.offenseCategory
+              : undefined
+          }
         />
         <BreakdownList
           title="Divisions by volume"
@@ -193,20 +230,17 @@ export const Dashboard = () => {
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-3">
-        <div className="space-y-6 xl:col-span-2">
-          <IncidentSummary
-            categories={data?.incidentCategories ?? []}
-            divisions={data?.incidentDivisions ?? []}
-            isLoading={isLoading && !data}
-          />
-          <IncidentTable
-            incidents={data?.incidents ?? []}
-            isLoading={isLoading && !data}
-            maxRows={7}
-          />
-        </div>
-        <CrimeMap incidents={data?.incidents ?? []} />
+      <div className="grid gap-6 xl:grid-cols-2">
+        <IncidentSummary
+          categories={data?.incidentCategories ?? []}
+          divisions={data?.incidentDivisions ?? []}
+          isLoading={isLoading && !data}
+        />
+        <IncidentTable
+          incidents={data?.incidents ?? []}
+          isLoading={isLoading && !data}
+          maxRows={7}
+        />
       </div>
     </section>
   );

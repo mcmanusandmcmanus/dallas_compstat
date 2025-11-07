@@ -25,6 +25,7 @@ export interface CompstatMetric {
 
 export interface TrendPoint {
   date: string;
+  endDate?: string;
   count: number;
   rollingAverage: number;
   upperBand: number;
