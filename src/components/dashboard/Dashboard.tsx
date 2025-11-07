@@ -152,17 +152,6 @@ export const Dashboard = () => {
         focusRange={filters.focusRange}
       />
 
-      <TrendCard
-        data={data?.trend ?? []}
-        isLoading={isLoading && !data}
-      />
-
-      <CrimeMap
-        incidents={data?.incidents ?? []}
-        isExpanded={mapExpanded}
-        onToggleExpand={() => setMapExpanded((prev) => !prev)}
-      />
-
       <FilterBar
         focusRange={filters.focusRange}
         onFocusRangeChange={handleFocusChange}
@@ -174,6 +163,17 @@ export const Dashboard = () => {
         availableCategories={availableCategories}
         isBusy={isLoading && !data}
         onReset={resetFilters}
+      />
+
+      <TrendCard
+        data={data?.trend ?? []}
+        isLoading={isLoading && !data}
+      />
+
+      <CrimeMap
+        incidents={data?.incidents ?? []}
+        isExpanded={mapExpanded}
+        onToggleExpand={() => setMapExpanded((prev) => !prev)}
       />
 
       {data?.meta?.stale ? (

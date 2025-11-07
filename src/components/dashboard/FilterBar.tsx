@@ -40,13 +40,13 @@ export const FilterBar = ({
   onReset,
 }: FilterBarProps) => {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-white shadow-xl shadow-slate-900/20 md:p-6">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-end">
-        <div className="flex-1">
-          <p className="text-xs uppercase tracking-wide text-white/60">
+    <section className="rounded-2xl border border-white/10 bg-slate-900/50 p-5 text-white shadow-xl shadow-slate-900/20">
+      <div className="flex flex-col gap-6">
+        <div>
+          <p className="text-xs uppercase tracking-[0.3em] text-white/60">
             Focus window
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {focusOptions.map((option) => {
               const active = option.id === focusRange;
               return (
@@ -54,29 +54,29 @@ export const FilterBar = ({
                   key={option.id}
                   type="button"
                   disabled={active && isBusy}
-                  className={clsx(
-                    "rounded-xl border px-4 py-3 text-left transition",
-                    active
-                      ? "border-emerald-300 bg-emerald-400 text-slate-950 shadow-inner"
-                      : "border-white/10 bg-transparent text-white/80 hover:border-white/40 hover:bg-white/5",
-                  )}
                   onClick={() => onFocusRangeChange(option.id)}
+                  className={clsx(
+                    "rounded-2xl border px-4 py-3 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300",
+                    active
+                      ? "border-emerald-300 bg-white text-slate-900 shadow-lg"
+                      : "border-white/15 bg-white/0 text-white/80 hover:border-white/40 hover:bg-white/5",
+                  )}
                 >
-                  <p className="text-sm font-semibold">{option.label}</p>
-                  <p className="text-xs text-white/60">{option.hint}</p>
+                  <p className="text-base font-semibold">{option.label}</p>
+                  <p className="text-sm text-white/60">{option.hint}</p>
                 </button>
               );
             })}
           </div>
         </div>
 
-        <div className="grid flex-1 gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto]">
           <label className="text-sm text-white/70">
             Division
             <select
               value={division}
               onChange={(event) => onDivisionChange(event.target.value)}
-              className="mt-2 w-full rounded-xl border border-white/15 bg-slate-950/30 px-3 py-2 text-base text-white outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-500/40"
+              className="mt-2 w-full rounded-2xl border border-white/15 bg-slate-950/30 px-3 py-2 text-base text-white outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-500/40"
               disabled={isBusy && !availableDivisions.length}
             >
               {availableDivisions.map((value) => (
@@ -92,7 +92,7 @@ export const FilterBar = ({
             <select
               value={offenseCategory}
               onChange={(event) => onOffenseChange(event.target.value)}
-              className="mt-2 w-full rounded-xl border border-white/15 bg-slate-950/30 px-3 py-2 text-base text-white outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-500/40"
+              className="mt-2 w-full rounded-2xl border border-white/15 bg-slate-950/30 px-3 py-2 text-base text-white outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-500/40"
               disabled={isBusy && !availableCategories.length}
             >
               {availableCategories.map((value) => (
@@ -102,17 +102,16 @@ export const FilterBar = ({
               ))}
             </select>
           </label>
-        </div>
 
-        <button
-          type="button"
-          onClick={onReset}
-          className="rounded-xl border border-white/20 px-4 py-3 text-sm font-semibold text-white/80 transition hover:border-emerald-200 hover:text-white hover:shadow-lg hover:shadow-emerald-500/20"
-        >
-          Reset filters
-        </button>
+          <button
+            type="button"
+            onClick={onReset}
+            className="rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold text-white/80 transition hover:border-emerald-200 hover:text-white hover:shadow-lg hover:shadow-emerald-500/20"
+          >
+            Reset filters
+          </button>
+        </div>
       </div>
-    </div>
+    </section>
   );
 };
-
