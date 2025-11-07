@@ -13,6 +13,7 @@ import { TrendCard } from "./TrendCard";
 import { BreakdownList } from "./BreakdownList";
 import { IncidentTable } from "./IncidentTable";
 import { FocusNarrative } from "./FocusNarrative";
+import { MethodologyCard } from "./MethodologyCard";
 
 const fetcher = async (url: string) => {
   const response = await fetch(url);
@@ -111,6 +112,11 @@ export const Dashboard = () => {
           </p>
         </div>
       ) : null}
+
+      <MethodologyCard
+        generatedAt={data?.generatedAt}
+        isStale={data?.meta?.stale}
+      />
 
       <SummaryGrid
         metrics={data?.windows ?? []}
