@@ -13,11 +13,13 @@ import type {
 } from "leaflet";
 import type { IncidentFeature } from "@/lib/types";
 import "leaflet/dist/leaflet.css";
+import clsx from "clsx";
 
 interface CrimeMapProps {
   incidents: IncidentFeature[];
   isExpanded?: boolean;
   onToggleExpand?: () => void;
+  className?: string;
 }
 
 const DEFAULT_CENTER: LatLngExpression = [32.7767, -96.797];
@@ -46,6 +48,7 @@ export const CrimeMap = ({
   incidents,
   isExpanded = false,
   onToggleExpand,
+  className,
 }: CrimeMapProps) => {
   const bounds = useMemo(
     () => computeBounds(incidents),
@@ -57,10 +60,17 @@ export const CrimeMap = ({
       ? DEFAULT_CENTER
       : [incidents[0].latitude, incidents[0].longitude];
 
-  const mapHeight = isExpanded ? "h-[520px]" : "h-[360px]";
+  const mapHeight = isExpanded
+    ? "h-[520px] lg:h-[640px]"
+    : "h-[360px] lg:h-[480px]";
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-5 text-white shadow-lg shadow-slate-900/30">
+    <div
+      className={clsx(
+        "flex h-full flex-col rounded-2xl border border-white/10 bg-slate-900/40 p-5 text-white shadow-lg shadow-slate-900/30",
+        className,
+      )}
+    >
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-white/80">

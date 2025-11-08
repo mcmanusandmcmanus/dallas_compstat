@@ -49,7 +49,7 @@ export const PatternInsightsModal = ({
               Day-of-week & hourly cadence
             </h2>
             <p className="text-sm text-white/70">
-              Mirrors the "Day-of-week pattern" and "Hourly cadence" cards for rapid briefing inside the Last 7 Days tile.
+              Mirrors the &ldquo;Day-of-week pattern&rdquo; and &ldquo;Hourly cadence&rdquo; cards for rapid briefing inside the Last 7 Days tile.
             </p>
           </div>
           <button

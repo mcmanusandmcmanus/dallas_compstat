@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import clsx from "clsx";
 import type {
   CompstatMetric,
@@ -20,6 +20,7 @@ interface SummaryGridProps {
   dayOfWeek: DayOfWeekStat[];
   hourOfDay: HourOfDayStat[];
   onOpenMap?: () => void;
+  mapSlot?: ReactNode;
 }
 
 const badgeStyles: Record<CompstatMetric["classification"], string> = {
@@ -38,12 +39,14 @@ const SummaryCard = ({
   onOpenDrilldown,
   onOpenPatterns,
   onOpenMap,
+  className,
 }: {
   metric: CompstatMetric;
   highlighted: boolean;
   onOpenDrilldown?: () => void;
   onOpenPatterns?: () => void;
   onOpenMap?: () => void;
+  className?: string;
 }) => {
   const delta = metric.changePct;
   const positive = delta >= 0;
@@ -65,6 +68,7 @@ const SummaryCard = ({
         highlighted
           ? "bg-gradient-to-br from-emerald-500/20 via-emerald-500/5 to-transparent shadow-xl shadow-emerald-500/30"
           : "bg-slate-900/40",
+        className,
       )}
     >
       <div className="flex items-start justify-between gap-4 text-sm text-white/70">
@@ -209,6 +213,7 @@ export const SummaryGrid = ({
   dayOfWeek,
   hourOfDay,
   onOpenMap,
+  mapSlot,
 }: SummaryGridProps) => {
   const [activeWindow, setActiveWindow] =
     useState<CompstatWindowId | null>(null);
@@ -222,15 +227,42 @@ export const SummaryGrid = ({
       (!drilldown?.[activeWindow] ||
         drilldown[activeWindow]?.length === 0)
     ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentionally close the modal when drilldown data disappears.
       setActiveWindow(null);
     }
   }, [activeWindow, drilldown]);
 
   useEffect(() => {
     if (patternsOpen && !hasPatternData) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- collapse the patterns modal if its backing data is lost.
       setPatternsOpen(false);
     }
   }, [patternsOpen, hasPatternData]);
+
+  const ORDERED_WINDOWS: CompstatWindowId[] = [
+    "7d",
+    "28d",
+    "ytd",
+    "365d",
+  ];
+
+  const GRID_PLACEMENT: Partial<
+    Record<CompstatWindowId, string>
+  > = {
+    "7d": "lg:col-start-1 lg:row-start-1",
+    "28d": "lg:col-start-1 lg:row-start-2",
+    ytd: "lg:col-start-3 lg:row-start-1",
+    "365d": "lg:col-start-3 lg:row-start-2",
+  };
+
+  const orderForWindow = (id: CompstatWindowId) => {
+    const index = ORDERED_WINDOWS.indexOf(id);
+    return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+  };
+
+  const sortedMetrics = [...metrics].sort(
+    (a, b) => orderForWindow(a.id) - orderForWindow(b.id),
+  );
 
   if (isLoading && metrics.length === 0) {
     return (
@@ -247,8 +279,8 @@ export const SummaryGrid = ({
 
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {metrics.map((metric) => {
+      <div className="grid items-stretch gap-4 md:grid-cols-2 lg:auto-rows-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
+        {sortedMetrics.map((metric) => {
           const hasDrilldown = Boolean(
             drilldown?.[metric.id]?.length,
           );
@@ -268,9 +300,15 @@ export const SummaryGrid = ({
                 enablePatterns ? () => setPatternsOpen(true) : undefined
               }
               onOpenMap={onOpenMap}
+              className={GRID_PLACEMENT[metric.id]}
             />
           );
         })}
+        {mapSlot ? (
+          <div className="w-full md:col-span-2 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+            {mapSlot}
+          </div>
+        ) : null}
       </div>
       {activeWindow && drilldown?.[activeWindow]?.length ? (
         <OffenseDrilldownModal

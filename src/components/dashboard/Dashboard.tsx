@@ -180,6 +180,14 @@ export const Dashboard = () => {
         dayOfWeek={data?.dayOfWeek ?? []}
         hourOfDay={data?.hourOfDay ?? []}
         onOpenMap={() => setMapExpanded(true)}
+        mapSlot={
+          <CrimeMap
+            incidents={data?.incidents ?? []}
+            isExpanded={mapExpanded}
+            onToggleExpand={() => setMapExpanded((prev) => !prev)}
+            className="h-full"
+          />
+        }
       />
 
       <TrendCard
@@ -198,12 +206,6 @@ export const Dashboard = () => {
         availableCategories={availableCategories}
         isBusy={isLoading && !data}
         onReset={resetFilters}
-      />
-
-      <CrimeMap
-        incidents={data?.incidents ?? []}
-        isExpanded={mapExpanded}
-        onToggleExpand={() => setMapExpanded((prev) => !prev)}
       />
 
       {data?.meta?.stale ? (

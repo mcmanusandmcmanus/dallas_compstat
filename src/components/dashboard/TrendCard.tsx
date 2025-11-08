@@ -29,7 +29,6 @@ const formatShort = (value: string) => {
 const formatWeekRange = (point: TrendPoint) => {
   const start = new Date(`${point.date}T00:00:00Z`);
   const endValue = point.endDate ?? point.date;
-  const end = new Date(`${endValue}T00:00:00Z`);
   return `${formatShort(point.date)} – ${formatShort(endValue)}, ${start.getUTCFullYear()}`;
 };
 
@@ -192,4 +191,3 @@ export const TrendCard = ({ data, isLoading }: TrendCardProps) => {
     </div>
   );
 };
-
