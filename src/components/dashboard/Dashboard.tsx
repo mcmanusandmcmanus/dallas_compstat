@@ -29,6 +29,7 @@ import { IncidentSummary } from "./IncidentSummary";
 import { DayOfWeekChart } from "./DayOfWeekChart";
 
 import { HourlyPatternChart } from "./HourlyPatternChart";
+import { CrimeCodeReferenceModal } from "./CrimeCodeReferenceModal";
 
 
 
@@ -71,6 +72,7 @@ const BASE_FILTERS = {
 export const Dashboard = () => {
   const [filters, setFilters] = useState(BASE_FILTERS);
   const [mapExpanded, setMapExpanded] = useState(false);
+  const [showReference, setShowReference] = useState(false);
 
   const query = useMemo(() => {
     const params = new URLSearchParams({ focusRange: filters.focusRange });
@@ -134,9 +136,33 @@ export const Dashboard = () => {
   return (
     <section className="flex flex-col gap-8">
       <header className="flex flex-col gap-4">
-        <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">
-          Dallas Police Department - Open Data API
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">
+            Dallas Police Department - Open Data API
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowReference(true)}
+            className="inline-flex items-center gap-2 rounded-full border border-emerald-400/50 bg-emerald-500/10 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-emerald-100 shadow-emerald-500/30 transition hover:bg-emerald-500/20"
+            title="View the Texas NIBRS crime-code reference"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              aria-hidden="true"
+            >
+              <path d="M4 5.5C4 4.12 5.12 3 6.5 3H20v15.5c0 .83-.67 1.5-1.5 1.5H6.5C5.12 20 4 18.88 4 17.5V5.5Z" />
+              <path d="M4 5h15c.55 0 1 .45 1 1v12" />
+              <path d="M8 9h8" />
+              <path d="M8 13h5" />
+            </svg>
+            TX CODES
+          </button>
+        </div>
         <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
           CompStat Command Brief
         </h1>
@@ -243,6 +269,9 @@ export const Dashboard = () => {
           maxRows={7}
         />
       </div>
+      {showReference ? (
+        <CrimeCodeReferenceModal onClose={() => setShowReference(false)} />
+      ) : null}
     </section>
   );
 };
