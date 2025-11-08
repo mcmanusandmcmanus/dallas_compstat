@@ -34,6 +34,27 @@ const badgeStyles: Record<CompstatMetric["classification"], string> = {
     "bg-sky-400/10 text-sky-200 border border-sky-200/30",
 };
 
+const RANGE_ICONS: Partial<Record<CompstatWindowId, ReactNode>> = {
+  "7d": (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-5 w-5"
+      aria-hidden="true"
+    >
+      <rect x="4" y="5" width="16" height="14" rx="2" />
+      <path d="M8 3v4" />
+      <path d="M16 3v4" />
+      <path d="M4 9h16" />
+      <path d="M10 13h4" />
+    </svg>
+  ),
+};
+
 const SummaryCard = ({
   metric,
   highlighted,
@@ -41,6 +62,7 @@ const SummaryCard = ({
   onOpenPatterns,
   onOpenMap,
   onOpenZScore,
+  icon,
 }: {
   metric: CompstatMetric;
   highlighted: boolean;
@@ -48,6 +70,7 @@ const SummaryCard = ({
   onOpenPatterns?: () => void;
   onOpenMap?: () => void;
   onOpenZScore?: (metric: CompstatMetric) => void;
+  icon?: ReactNode;
 }) => {
   const delta = metric.changePct;
   const positive = delta >= 0;
@@ -72,7 +95,17 @@ const SummaryCard = ({
       )}
     >
       <div className="text-sm text-white/70">
-        <p className="font-medium">{metric.label}</p>
+        <div className="flex items-center gap-3">
+          {icon ? (
+            <span
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-emerald-200 shadow-inner shadow-emerald-500/20"
+              aria-hidden="true"
+            >
+              {icon}
+            </span>
+          ) : null}
+          <p className="font-medium">{metric.label}</p>
+        </div>
         <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
           <span
             className={clsx(
@@ -283,6 +316,7 @@ export const SummaryGrid = ({
         }
         onOpenMap={onOpenMap}
         onOpenZScore={(entry) => setZDetailsMetric(entry)}
+        icon={RANGE_ICONS[metric.id]}
       />
     );
   };
