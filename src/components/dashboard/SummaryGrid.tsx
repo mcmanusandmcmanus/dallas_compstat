@@ -321,13 +321,16 @@ export const SummaryGrid = ({
     activeWindow && drilldown?.[activeWindow]?.length
       ? activeWindow
       : null;
+  const drilldownRows = validActiveWindow
+    ? drilldown?.[validActiveWindow]
+    : undefined;
 
   return (
     <>
       {gridContent}
-      {validActiveWindow ? (
+      {validActiveWindow && drilldownRows?.length ? (
         <OffenseDrilldownModal
-          rows={drilldown[validActiveWindow]!}
+          rows={drilldownRows}
           title={
             metrics.find((metric) => metric.id === validActiveWindow)
               ?.label ?? "Selected window"
