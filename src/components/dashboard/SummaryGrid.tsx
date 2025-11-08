@@ -11,6 +11,7 @@ import type {
 } from "@/lib/types";
 import { OffenseDrilldownModal } from "./OffenseDrilldownModal";
 import { PatternInsightsModal } from "./PatternInsightsModal";
+import { ZScoreModal } from "./ZScoreModal";
 
 interface SummaryGridProps {
   metrics: CompstatMetric[];
@@ -39,12 +40,14 @@ const SummaryCard = ({
   onOpenDrilldown,
   onOpenPatterns,
   onOpenMap,
+  onOpenZScore,
 }: {
   metric: CompstatMetric;
   highlighted: boolean;
   onOpenDrilldown?: () => void;
   onOpenPatterns?: () => void;
   onOpenMap?: () => void;
+  onOpenZScore?: (metric: CompstatMetric) => void;
 }) => {
   const delta = metric.changePct;
   const positive = delta >= 0;
@@ -194,9 +197,14 @@ const SummaryCard = ({
             {yearArrow} {Math.abs(deltaYear).toFixed(1)}% vs same time last year
           </span>
         </div>
-        <span className="text-xs font-semibold text-white/80">
+        <button
+          type="button"
+          onClick={() => onOpenZScore?.(metric)}
+          className="text-xs font-semibold text-white/80 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80"
+          title="Show the z-score calculation details"
+        >
           z = {metric.zScore.toFixed(1)}
-        </span>
+        </button>
       </div>
     </div>
   );
@@ -215,6 +223,8 @@ export const SummaryGrid = ({
   const [activeWindow, setActiveWindow] =
     useState<CompstatWindowId | null>(null);
   const [patternsOpen, setPatternsOpen] = useState(false);
+  const [zDetailsMetric, setZDetailsMetric] =
+    useState<CompstatMetric | null>(null);
   const hasPatternData =
     (dayOfWeek?.length ?? 0) > 0 || (hourOfDay?.length ?? 0) > 0;
 
@@ -278,6 +288,7 @@ export const SummaryGrid = ({
           enablePatterns ? () => setPatternsOpen(true) : undefined
         }
         onOpenMap={onOpenMap}
+        onOpenZScore={(entry) => setZDetailsMetric(entry)}
       />
     );
   };
@@ -336,6 +347,12 @@ export const SummaryGrid = ({
           dayOfWeek={dayOfWeek}
           hourOfDay={hourOfDay}
           onClose={() => setPatternsOpen(false)}
+        />
+      ) : null}
+      {zDetailsMetric ? (
+        <ZScoreModal
+          metric={zDetailsMetric}
+          onClose={() => setZDetailsMetric(null)}
         />
       ) : null}
     </>
