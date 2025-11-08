@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import clsx from "clsx";
 import type {
   CompstatMetric,
@@ -222,29 +222,23 @@ export const SummaryGrid = ({
 }: SummaryGridProps) => {
   const [activeWindow, setActiveWindow] =
     useState<CompstatWindowId | null>(null);
-  const [patternsOpen, setPatternsOpen] = useState(false);
+  const [patternSnapshot, setPatternSnapshot] = useState<{
+    dayOfWeek: DayOfWeekStat[];
+    hourOfDay: HourOfDayStat[];
+  } | null>(null);
   const [zDetailsMetric, setZDetailsMetric] =
     useState<CompstatMetric | null>(null);
   const hasPatternData =
     (dayOfWeek?.length ?? 0) > 0 || (hourOfDay?.length ?? 0) > 0;
-
-  useEffect(() => {
-    if (
-      activeWindow &&
-      (!drilldown?.[activeWindow] ||
-        drilldown[activeWindow]?.length === 0)
-    ) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentionally close the modal when drilldown data disappears.
-      setActiveWindow(null);
+  const handleOpenPatterns = () => {
+    if (!hasPatternData) {
+      return;
     }
-  }, [activeWindow, drilldown]);
-
-  useEffect(() => {
-    if (patternsOpen && !hasPatternData) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- collapse the patterns modal if its backing data is lost.
-      setPatternsOpen(false);
-    }
-  }, [patternsOpen, hasPatternData]);
+    setPatternSnapshot({
+      dayOfWeek,
+      hourOfDay,
+    });
+  };
 
   const ORDERED_WINDOWS: CompstatWindowId[] = [
     "7d",
@@ -285,7 +279,7 @@ export const SummaryGrid = ({
             : undefined
         }
         onOpenPatterns={
-          enablePatterns ? () => setPatternsOpen(true) : undefined
+          enablePatterns ? handleOpenPatterns : undefined
         }
         onOpenMap={onOpenMap}
         onOpenZScore={(entry) => setZDetailsMetric(entry)}
@@ -308,45 +302,44 @@ export const SummaryGrid = ({
 
   const hasMapSlot = Boolean(mapSlot);
   const gridContent = hasMapSlot ? (
-    <>
-      <div className="grid gap-4 md:grid-cols-2 lg:hidden">
-        {sortedMetrics.map((metric) => renderMetricCard(metric))}
-        <div className="md:col-span-2">{mapSlot}</div>
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.5fr)_minmax(0,0.85fr)]">
+      <div className="order-1 grid gap-4 lg:order-none">
+        {leftColumnMetrics.map((metric) => renderMetricCard(metric))}
       </div>
-      <div className="hidden items-stretch gap-5 lg:grid lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.5fr)_minmax(0,0.85fr)]">
-        <div className="grid gap-4">
-          {leftColumnMetrics.map((metric) => renderMetricCard(metric))}
-        </div>
-        <div className="flex h-full">{mapSlot}</div>
-        <div className="grid gap-4">
-          {rightColumnMetrics.map((metric) => renderMetricCard(metric))}
-        </div>
+      <div className="order-2 flex h-full lg:order-none">{mapSlot}</div>
+      <div className="order-3 grid gap-4 lg:order-none">
+        {rightColumnMetrics.map((metric) => renderMetricCard(metric))}
       </div>
-    </>
+    </div>
   ) : (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       {sortedMetrics.map((metric) => renderMetricCard(metric))}
     </div>
   );
 
+  const validActiveWindow =
+    activeWindow && drilldown?.[activeWindow]?.length
+      ? activeWindow
+      : null;
+
   return (
     <>
       {gridContent}
-      {activeWindow && drilldown?.[activeWindow]?.length ? (
+      {validActiveWindow ? (
         <OffenseDrilldownModal
-          rows={drilldown[activeWindow]!}
+          rows={drilldown[validActiveWindow]!}
           title={
-            metrics.find((metric) => metric.id === activeWindow)
+            metrics.find((metric) => metric.id === validActiveWindow)
               ?.label ?? "Selected window"
           }
           onClose={() => setActiveWindow(null)}
         />
       ) : null}
-      {patternsOpen ? (
+      {patternSnapshot ? (
         <PatternInsightsModal
-          dayOfWeek={dayOfWeek}
-          hourOfDay={hourOfDay}
-          onClose={() => setPatternsOpen(false)}
+          dayOfWeek={patternSnapshot.dayOfWeek}
+          hourOfDay={patternSnapshot.hourOfDay}
+          onClose={() => setPatternSnapshot(null)}
         />
       ) : null}
       {zDetailsMetric ? (
