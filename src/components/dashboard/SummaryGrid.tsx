@@ -19,6 +19,7 @@ interface SummaryGridProps {
   drilldown?: Partial<Record<CompstatWindowId, OffenseDrilldownRow[]>>;
   dayOfWeek: DayOfWeekStat[];
   hourOfDay: HourOfDayStat[];
+  onOpenMap?: () => void;
 }
 
 const badgeStyles: Record<CompstatMetric["classification"], string> = {
@@ -36,11 +37,13 @@ const SummaryCard = ({
   highlighted,
   onOpenDrilldown,
   onOpenPatterns,
+  onOpenMap,
 }: {
   metric: CompstatMetric;
   highlighted: boolean;
   onOpenDrilldown?: () => void;
   onOpenPatterns?: () => void;
+  onOpenMap?: () => void;
 }) => {
   const delta = metric.changePct;
   const positive = delta >= 0;
@@ -51,6 +54,9 @@ const SummaryCard = ({
   const yearPositive = deltaYear >= 0;
   const yearColor = yearPositive ? "text-sky-300" : "text-rose-300";
   const yearArrow = yearPositive ? "↑" : "↓";
+  const hasActions = Boolean(
+    onOpenPatterns || onOpenDrilldown || onOpenMap,
+  );
 
   return (
     <div
@@ -61,59 +67,9 @@ const SummaryCard = ({
           : "bg-slate-900/40",
       )}
     >
-      <div className="flex items-center justify-between text-sm text-white/70">
+      <div className="flex items-start justify-between gap-4 text-sm text-white/70">
         <p className="font-medium">{metric.label}</p>
-        <div className="flex items-center gap-2">
-          {onOpenPatterns ? (
-            <button
-              type="button"
-              onClick={onOpenPatterns}
-              className="rounded-full border border-white/20 p-1 text-white/60 transition hover:border-white/60 hover:text-white"
-              title="View day-of-week and hourly cadence"
-            >
-              <span className="sr-only">
-                View temporal patterns for {metric.label}
-              </span>
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                aria-hidden="true"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <path d="M4 5h16v14H4z" />
-                <path d="M8 5v14M16 5v14" />
-                <path d="M4 13h16" />
-                <path d="M7 17l2-2 2 2 2-2 2 2 2-2" />
-              </svg>
-            </button>
-          ) : null}
-          {onOpenDrilldown ? (
-            <button
-              type="button"
-              onClick={onOpenDrilldown}
-              className="rounded-full border border-white/20 p-1 text-white/60 transition hover:border-white/60 hover:text-white"
-              title="View offense drilldown"
-            >
-              <span className="sr-only">
-                Open {metric.label} drilldown
-              </span>
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                aria-hidden="true"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <rect x="4" y="5" width="16" height="14" rx="2" />
-                <path d="M4 11h16M10 5v14" />
-              </svg>
-            </button>
-          ) : null}
+        <div className="flex flex-col items-end gap-2 text-right">
           <span
             className={clsx(
               "rounded-full px-3 py-1 text-xs font-semibold",
@@ -122,6 +78,96 @@ const SummaryCard = ({
           >
             {metric.classification}
           </span>
+          {hasActions ? (
+            <div className="flex items-center gap-2">
+              {onOpenMap ? (
+                <button
+                  type="button"
+                  onClick={onOpenMap}
+                  className="group rounded-full border border-white/20 bg-white/5 p-1.5 text-white/80 shadow-sm transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80"
+                  title="Expand hot spot map"
+                >
+                  <span className="sr-only">Expand the map view</span>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    aria-hidden="true"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="drop-shadow-[0_0_4px_rgba(148,163,184,0.45)]"
+                  >
+                    <path d="M3.5 6.5 9 4.5l6 2 5.5-2.5v13l-5.5 2.5-6-2-5.5 2.5v-13Z" />
+                    <path d="m9 4.5.03 13" />
+                    <path d="m15 6.5-.02 13" />
+                    <path d="M3.5 11 9 9l6 2 5.5-2.5" />
+                  </svg>
+                </button>
+              ) : null}
+              {onOpenPatterns ? (
+                <button
+                  type="button"
+                  onClick={onOpenPatterns}
+                  className="group rounded-full border border-emerald-400/40 bg-emerald-500/10 p-2 text-emerald-100 transition hover:bg-emerald-500/20 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
+                  title="View day-of-week and hourly cadence"
+                >
+                  <span className="sr-only">
+                    View temporal patterns for {metric.label}
+                  </span>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    aria-hidden="true"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="drop-shadow-[0_0_4px_rgba(16,185,129,0.45)]"
+                  >
+                    <path d="M4 17.5h16" />
+                    <path d="M6 6.5v11" />
+                    <path d="M10 8c1.2 2.6 2.8 2.6 4 0 1.2-2.7 2.8-2.7 4 0" />
+                    <circle cx="10" cy="8" r="1.1" fill="currentColor" stroke="none" />
+                    <circle cx="14" cy="8" r="1.1" fill="currentColor" stroke="none" />
+                  </svg>
+                </button>
+              ) : null}
+              {onOpenDrilldown ? (
+                <button
+                  type="button"
+                  onClick={onOpenDrilldown}
+                  className="group rounded-full border border-sky-400/40 bg-sky-500/10 p-2 text-sky-100 transition hover:bg-sky-500/20 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+                  title="View offense drilldown"
+                >
+                  <span className="sr-only">
+                    Open {metric.label} drilldown
+                  </span>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    aria-hidden="true"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="drop-shadow-[0_0_4px_rgba(125,211,252,0.45)]"
+                  >
+                    <path d="M4 6h4v8H4z" />
+                    <path d="M10 10h4v10h-4z" />
+                    <path d="M16 4h4v12h-4z" />
+                    <path d="M12 18l2 2 2-2" />
+                  </svg>
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -162,6 +208,7 @@ export const SummaryGrid = ({
   drilldown,
   dayOfWeek,
   hourOfDay,
+  onOpenMap,
 }: SummaryGridProps) => {
   const [activeWindow, setActiveWindow] =
     useState<CompstatWindowId | null>(null);
@@ -220,6 +267,7 @@ export const SummaryGrid = ({
               onOpenPatterns={
                 enablePatterns ? () => setPatternsOpen(true) : undefined
               }
+              onOpenMap={onOpenMap}
             />
           );
         })}
