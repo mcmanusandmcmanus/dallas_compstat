@@ -6,6 +6,8 @@ import { useCallback, useMemo, useState } from "react";
 
 import useSWR from "swr";
 
+import dynamic from "next/dynamic";
+
 import type { CompstatResponse, CompstatWindowId } from "@/lib/types";
 
 import { FilterBar } from "./FilterBar";
@@ -34,6 +36,16 @@ const SWR_OPTIONS = {
   keepPreviousData: true,
 };
 
+const CrimeMap = dynamic(
+  () => import("./CrimeMap").then((mod) => mod.CrimeMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[420px] w-full animate-pulse rounded-2xl border border-white/5 bg-white/5" />
+    ),
+  },
+);
+
 const withAllOption = (items: string[]) => [
   "ALL",
   ...items.filter((item) => item && item.trim().length > 0),
@@ -47,6 +59,7 @@ const BASE_FILTERS = {
 
 export const Dashboard = () => {
   const [filters, setFilters] = useState(BASE_FILTERS);
+  const [mapExpanded, setMapExpanded] = useState(false);
   const [showReference, setShowReference] = useState(false);
 
   const query = useMemo(() => {
@@ -167,6 +180,14 @@ export const Dashboard = () => {
         }
         onSelectOffenseCategory={handleCategoryDrilldown}
         onFocusRangeChange={handleFocusChange}
+        mapSlot={
+          <CrimeMap
+            incidents={data?.incidents ?? []}
+            isExpanded={mapExpanded}
+            onToggleExpand={() => setMapExpanded((prev) => !prev)}
+            className="h-full"
+          />
+        }
       />
 
       <TrendCard

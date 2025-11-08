@@ -39,6 +39,7 @@ interface SummaryGridProps {
   selectedOffenseCategory?: string;
   onSelectOffenseCategory?: (label: string) => void;
   onFocusRangeChange?: (range: CompstatWindowId) => void;
+  mapSlot?: ReactNode;
 }
 
 const badgeStyles: Record<CompstatMetric["classification"], string> = {
@@ -292,20 +293,26 @@ const SummaryCard = ({
           </button>
         </div>
         {hasActions ? (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {actions.map((action) => (
-              <button
-                key={action.id}
-                type="button"
-                onClick={action.onClick}
-                disabled={action.disabled}
-                className="group rounded-full border border-white/15 bg-white/5 p-2 text-white/80 shadow-sm transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80 disabled:cursor-not-allowed disabled:opacity-40"
-                title={action.tooltip ?? action.label}
-              >
-                <span className="sr-only">{action.label}</span>
-                {action.icon}
-              </button>
-            ))}
+          <div className="mt-3 flex flex-col gap-3">
+            {actions.length ? (
+              <div className="grid grid-cols-2 gap-2">
+                {actions.map((action) => (
+                  <button
+                    key={action.id}
+                    type="button"
+                    onClick={action.onClick}
+                    disabled={action.disabled}
+                    className="w-full rounded-full border border-white/15 bg-white/5 p-2 text-white/80 shadow-sm transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80 disabled:cursor-not-allowed disabled:opacity-40"
+                    title={action.tooltip ?? action.label}
+                  >
+                    <span className="sr-only">{action.label}</span>
+                    <div className="flex items-center justify-center">
+                      {action.icon}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : null}
             {onOpenDrilldown ? (
               <button
                 type="button"
@@ -382,6 +389,7 @@ export const SummaryGrid = ({
   selectedOffenseCategory,
   onSelectOffenseCategory,
   onFocusRangeChange,
+  mapSlot,
 }: SummaryGridProps) => {
   const [activeWindow, setActiveWindow] =
     useState<CompstatWindowId | null>(null);
@@ -443,6 +451,8 @@ export const SummaryGrid = ({
     "ytd",
     "365d",
   ];
+  const LEFT_COLUMN_WINDOWS: CompstatWindowId[] = ["7d", "28d"];
+  const RIGHT_COLUMN_WINDOWS: CompstatWindowId[] = ["ytd", "365d"];
   const orderForWindow = (id: CompstatWindowId) => {
     const index = ORDERED_WINDOWS.indexOf(id);
     return index === -1 ? Number.MAX_SAFE_INTEGER : index;
@@ -450,6 +460,12 @@ export const SummaryGrid = ({
 
   const sortedMetrics = [...metrics].sort(
     (a, b) => orderForWindow(a.id) - orderForWindow(b.id),
+  );
+  const leftColumnMetrics = sortedMetrics.filter((metric) =>
+    LEFT_COLUMN_WINDOWS.includes(metric.id),
+  );
+  const rightColumnMetrics = sortedMetrics.filter((metric) =>
+    RIGHT_COLUMN_WINDOWS.includes(metric.id),
   );
 
   const insightAvailability: Record<InsightType, boolean> = {
@@ -573,7 +589,18 @@ export const SummaryGrid = ({
     );
   }
 
-  const gridContent = (
+  const hasMapSlot = Boolean(mapSlot);
+  const gridContent = hasMapSlot ? (
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.5fr)_minmax(0,0.85fr)]">
+      <div className="order-1 grid gap-4 lg:order-none">
+        {leftColumnMetrics.map((metric) => renderMetricCard(metric))}
+      </div>
+      <div className="order-2 flex h-full lg:order-none">{mapSlot}</div>
+      <div className="order-3 grid gap-4 lg:order-none">
+        {rightColumnMetrics.map((metric) => renderMetricCard(metric))}
+      </div>
+    </div>
+  ) : (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       {sortedMetrics.map((metric) => renderMetricCard(metric))}
     </div>
