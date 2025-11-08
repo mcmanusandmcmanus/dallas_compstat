@@ -8,12 +8,14 @@ import { HourlyPatternChart } from "./HourlyPatternChart";
 interface PatternInsightsModalProps {
   dayOfWeek: DayOfWeekStat[];
   hourOfDay: HourOfDayStat[];
+  focusLabel?: string;
   onClose: () => void;
 }
 
 export const PatternInsightsModal = ({
   dayOfWeek,
   hourOfDay,
+  focusLabel,
   onClose,
 }: PatternInsightsModalProps) => {
   useEffect(() => {
@@ -49,7 +51,8 @@ export const PatternInsightsModal = ({
               Day-of-week & hourly cadence
             </h2>
             <p className="text-sm text-white/70">
-              Mirrors the &ldquo;Day-of-week pattern&rdquo; and &ldquo;Hourly cadence&rdquo; cards for rapid briefing inside the Last 7 Days tile.
+              Mirrors the &ldquo;Day-of-week pattern&rdquo; and &ldquo;Hourly cadence&rdquo; cards for rapid briefing inside the{" "}
+              {focusLabel ?? "current focus window"} tile.
             </p>
           </div>
           <button

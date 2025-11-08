@@ -250,7 +250,6 @@ export const Dashboard = () => {
         drilldown={data?.drilldown}
         dayOfWeek={data?.dayOfWeek ?? []}
         hourOfDay={data?.hourOfDay ?? []}
-        onOpenMap={() => setMapExpanded(true)}
         mapSlot={
           <CrimeMap
             incidents={data?.incidents ?? []}

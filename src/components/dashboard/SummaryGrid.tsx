@@ -20,7 +20,6 @@ interface SummaryGridProps {
   drilldown?: Partial<Record<CompstatWindowId, OffenseDrilldownRow[]>>;
   dayOfWeek: DayOfWeekStat[];
   hourOfDay: HourOfDayStat[];
-  onOpenMap?: () => void;
   mapSlot?: ReactNode;
 }
 
@@ -60,7 +59,6 @@ const SummaryCard = ({
   highlighted,
   onOpenDrilldown,
   onOpenPatterns,
-  onOpenMap,
   onOpenZScore,
   icon,
 }: {
@@ -68,7 +66,6 @@ const SummaryCard = ({
   highlighted: boolean;
   onOpenDrilldown?: () => void;
   onOpenPatterns?: () => void;
-  onOpenMap?: () => void;
   onOpenZScore?: (metric: CompstatMetric) => void;
   icon?: ReactNode;
 }) => {
@@ -81,9 +78,7 @@ const SummaryCard = ({
   const yearPositive = deltaYear >= 0;
   const yearColor = yearPositive ? "text-sky-300" : "text-rose-300";
   const yearArrow = yearPositive ? "↑" : "↓";
-  const hasActions = Boolean(
-    onOpenPatterns || onOpenDrilldown || onOpenMap,
-  );
+  const hasActions = Boolean(onOpenPatterns || onOpenDrilldown);
 
   return (
     <div
@@ -126,33 +121,6 @@ const SummaryCard = ({
         </div>
         {hasActions ? (
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            {onOpenMap ? (
-              <button
-                type="button"
-                onClick={onOpenMap}
-                className="group rounded-full border border-white/20 bg-white/5 p-1.5 text-white/80 shadow-sm transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80"
-                title="Expand hot spot map"
-              >
-                <span className="sr-only">Expand the map view</span>
-                <svg
-                  viewBox="0 0 24 24"
-                  width="14"
-                  height="14"
-                  aria-hidden="true"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="drop-shadow-[0_0_4px_rgba(148,163,184,0.45)]"
-                >
-                  <path d="M3.5 6.5 9 4.5l6 2 5.5-2.5v13l-5.5 2.5-6-2-5.5 2.5v-13Z" />
-                  <path d="m9 4.5.03 13" />
-                  <path d="m15 6.5-.02 13" />
-                  <path d="M3.5 11 9 9l6 2 5.5-2.5" />
-                </svg>
-              </button>
-            ) : null}
             {onOpenPatterns ? (
               <button
                 type="button"
@@ -250,7 +218,6 @@ export const SummaryGrid = ({
   drilldown,
   dayOfWeek,
   hourOfDay,
-  onOpenMap,
   mapSlot,
 }: SummaryGridProps) => {
   const [activeWindow, setActiveWindow] =
@@ -258,18 +225,20 @@ export const SummaryGrid = ({
   const [patternSnapshot, setPatternSnapshot] = useState<{
     dayOfWeek: DayOfWeekStat[];
     hourOfDay: HourOfDayStat[];
+    focusLabel?: string;
   } | null>(null);
   const [zDetailsMetric, setZDetailsMetric] =
     useState<CompstatMetric | null>(null);
   const hasPatternData =
     (dayOfWeek?.length ?? 0) > 0 || (hourOfDay?.length ?? 0) > 0;
-  const handleOpenPatterns = () => {
+  const handleOpenPatterns = (focusLabel?: string) => {
     if (!hasPatternData) {
       return;
     }
     setPatternSnapshot({
       dayOfWeek,
       hourOfDay,
+      focusLabel,
     });
   };
 
@@ -299,22 +268,22 @@ export const SummaryGrid = ({
 
   const renderMetricCard = (metric: CompstatMetric) => {
     const hasDrilldown = Boolean(drilldown?.[metric.id]?.length);
-    const enablePatterns =
-      metric.id === "7d" && hasPatternData;
+    const isFocusMetric = metric.id === focusRange;
+    const enablePatterns = isFocusMetric && hasPatternData;
+    const handlePatternsClick = enablePatterns
+      ? () => handleOpenPatterns(metric.label)
+      : undefined;
     return (
       <SummaryCard
         key={metric.id}
         metric={metric}
-        highlighted={metric.id === focusRange}
+        highlighted={isFocusMetric}
         onOpenDrilldown={
           hasDrilldown
             ? () => setActiveWindow(metric.id)
             : undefined
         }
-        onOpenPatterns={
-          enablePatterns ? handleOpenPatterns : undefined
-        }
-        onOpenMap={onOpenMap}
+        onOpenPatterns={handlePatternsClick}
         onOpenZScore={(entry) => setZDetailsMetric(entry)}
         icon={RANGE_ICONS[metric.id]}
       />
@@ -376,6 +345,7 @@ export const SummaryGrid = ({
         <PatternInsightsModal
           dayOfWeek={patternSnapshot.dayOfWeek}
           hourOfDay={patternSnapshot.hourOfDay}
+          focusLabel={patternSnapshot.focusLabel}
           onClose={() => setPatternSnapshot(null)}
         />
       ) : null}
