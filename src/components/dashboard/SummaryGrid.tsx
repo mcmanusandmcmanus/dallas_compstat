@@ -332,20 +332,24 @@ const SummaryCard = ({
                 ))}
               </div>
             ) : null}
-            {onOpenDrilldown ? (
-              <button
-                type="button"
-                onClick={onOpenDrilldown}
-                className="rounded-xl border border-sky-400/30 bg-slate-900/30 p-3 text-left text-white transition hover:border-sky-300 hover:bg-slate-900/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
-              >
-                <p className="text-sm font-semibold">
-                  View offense drilldown
-                </p>
-                <p className="text-xs text-white/70">
-                  Validation Table {metric.label} drilldown
-                </p>
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={onOpenDrilldown}
+              disabled={!onOpenDrilldown}
+              className={clsx(
+                "rounded-xl border p-3 text-left text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300",
+                onOpenDrilldown
+                  ? "border-sky-400/30 bg-slate-900/30 hover:border-sky-300 hover:bg-slate-900/50"
+                  : "cursor-not-allowed border-white/10 bg-slate-900/20 text-white/50",
+              )}
+            >
+              <p className="text-sm font-semibold">
+                View offense drilldown
+              </p>
+              <p className="text-xs text-white/70">
+                Validation Table {metric.label} drilldown
+              </p>
+            </button>
           </div>
         ) : null}
       </div>
@@ -491,13 +495,14 @@ export const SummaryGrid = ({
     "Current focus window";
   const activeInsightLabel = insightMetricLabel ?? defaultInsightLabel;
 
-  const buildInsightActions = (
-    metric: CompstatMetric,
-    extras?: { onOpenDrilldown?: () => void },
-  ): SummaryCardAction[] => {
-    const isSwitchingFocus =
-      pendingInsight?.metricId === metric.id;
-    return [
+const buildInsightActions = (
+  metric: CompstatMetric,
+  extras?: { onOpenDrilldown?: () => void },
+): SummaryCardAction[] => {
+  const isSwitchingFocus =
+    pendingInsight?.metricId === metric.id;
+  const hasDrilldownAction = Boolean(extras?.onOpenDrilldown);
+  return [
       {
         id: "map",
         label: "Open hot spot map",
@@ -559,20 +564,18 @@ export const SummaryGrid = ({
         disabled:
           isSwitchingFocus || !insightAvailability.incidentTable,
       },
-      ...(extras?.onOpenDrilldown
-        ? [
-            {
-              id: "drilldown" as const,
-              label: `View offense drilldown — Validation Table ${metric.label} drilldown`,
-              icon: INSIGHT_ICONS.drilldown,
-              onClick: extras.onOpenDrilldown,
-              disabled: isSwitchingFocus,
-              tooltip: `Validation Table ${metric.label} drilldown`,
-            },
-          ]
-        : []),
-    ];
-  };
+      {
+        id: "drilldown",
+        label: `View offense drilldown — Validation Table ${metric.label} drilldown`,
+        icon: INSIGHT_ICONS.drilldown,
+        onClick: extras?.onOpenDrilldown,
+        disabled: isSwitchingFocus || !hasDrilldownAction,
+        tooltip: hasDrilldownAction
+          ? `Validation Table ${metric.label} drilldown`
+          : "Drilldown unavailable for this window.",
+      },
+  ];
+};
 
   const renderMetricCard = (metric: CompstatMetric) => {
     const hasDrilldown = Boolean(drilldown?.[metric.id]?.length);
