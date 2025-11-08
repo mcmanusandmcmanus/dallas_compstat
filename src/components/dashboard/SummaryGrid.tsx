@@ -68,19 +68,19 @@ const SummaryCard = ({
           : "bg-slate-900/40",
       )}
     >
-      <div className="flex items-start justify-between gap-4 text-sm text-white/70">
+      <div className="text-sm text-white/70">
         <p className="font-medium">{metric.label}</p>
-        <div className="flex flex-col items-end gap-2 text-right">
+        <div className="mt-2 flex flex-col gap-2">
           <span
             className={clsx(
-              "rounded-full px-3 py-1 text-xs font-semibold",
+              "inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold",
               badgeStyles[metric.classification],
             )}
           >
             {metric.classification}
           </span>
           {hasActions ? (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {onOpenMap ? (
                 <button
                   type="button"
