@@ -80,7 +80,8 @@ type InsightType =
   | "hourly"
   | "breakdown"
   | "incidentSummary"
-  | "incidentTable";
+  | "incidentTable"
+  | "drilldown";
 
 interface SummaryCardAction {
   id: InsightType;
@@ -225,6 +226,24 @@ const INSIGHT_ICONS: Record<InsightType, ReactNode> = {
       <path d="M10 5v14" />
     </svg>
   ),
+  drilldown: (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 6h4v8H4z" />
+      <path d="M10 10h4v10h-4z" />
+      <path d="M16 4h4v12h-4z" />
+      <path d="M12 18l2 2 2-2" />
+    </svg>
+  ),
 };
 
 const SummaryCard = ({
@@ -317,29 +336,14 @@ const SummaryCard = ({
               <button
                 type="button"
                 onClick={onOpenDrilldown}
-                className="group rounded-full border border-sky-400/40 bg-sky-500/10 p-2 text-sky-100 transition hover:bg-sky-500/20 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
-                title="View offense drilldown"
+                className="rounded-xl border border-sky-400/30 bg-slate-900/30 p-3 text-left text-white transition hover:border-sky-300 hover:bg-slate-900/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
               >
-                <span className="sr-only">
-                  Open {metric.label} drilldown
-                </span>
-                <svg
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  aria-hidden="true"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="drop-shadow-[0_0_4px_rgba(125,211,252,0.45)]"
-                >
-                  <path d="M4 6h4v8H4z" />
-                  <path d="M10 10h4v10h-4z" />
-                  <path d="M16 4h4v12h-4z" />
-                  <path d="M12 18l2 2 2-2" />
-                </svg>
+                <p className="text-sm font-semibold">
+                  View offense drilldown
+                </p>
+                <p className="text-xs text-white/70">
+                  Validation Table {metric.label} drilldown
+                </p>
               </button>
             ) : null}
           </div>
@@ -480,6 +484,7 @@ export const SummaryGrid = ({
       (incidentCategories?.length ?? 0) > 0 ||
       (incidentDivisions?.length ?? 0) > 0,
     incidentTable: incidents.length > 0,
+    drilldown: true,
   };
   const defaultInsightLabel =
     metrics.find((entry) => entry.id === focusRange)?.label ??
@@ -488,6 +493,7 @@ export const SummaryGrid = ({
 
   const buildInsightActions = (
     metric: CompstatMetric,
+    extras?: { onOpenDrilldown?: () => void },
   ): SummaryCardAction[] => {
     const isSwitchingFocus =
       pendingInsight?.metricId === metric.id;
@@ -553,23 +559,36 @@ export const SummaryGrid = ({
         disabled:
           isSwitchingFocus || !insightAvailability.incidentTable,
       },
+      ...(extras?.onOpenDrilldown
+        ? [
+            {
+              id: "drilldown" as const,
+              label: `View offense drilldown — Validation Table ${metric.label} drilldown`,
+              icon: INSIGHT_ICONS.drilldown,
+              onClick: extras.onOpenDrilldown,
+              disabled: isSwitchingFocus,
+              tooltip: `Validation Table ${metric.label} drilldown`,
+            },
+          ]
+        : []),
     ];
   };
 
   const renderMetricCard = (metric: CompstatMetric) => {
     const hasDrilldown = Boolean(drilldown?.[metric.id]?.length);
     const isFocusMetric = metric.id === focusRange;
+    const openDrilldownHandler = hasDrilldown
+      ? () => setActiveWindow(metric.id)
+      : undefined;
     return (
       <SummaryCard
         key={metric.id}
         metric={metric}
         highlighted={isFocusMetric}
-        onOpenDrilldown={
-          hasDrilldown
-            ? () => setActiveWindow(metric.id)
-            : undefined
-        }
-        actions={buildInsightActions(metric)}
+        onOpenDrilldown={openDrilldownHandler}
+        actions={buildInsightActions(metric, {
+          onOpenDrilldown: openDrilldownHandler,
+        })}
         onOpenZScore={(entry) => setZDetailsMetric(entry)}
         icon={RANGE_ICONS[metric.id]}
       />
