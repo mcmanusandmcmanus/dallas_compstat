@@ -39,14 +39,12 @@ const SummaryCard = ({
   onOpenDrilldown,
   onOpenPatterns,
   onOpenMap,
-  className,
 }: {
   metric: CompstatMetric;
   highlighted: boolean;
   onOpenDrilldown?: () => void;
   onOpenPatterns?: () => void;
   onOpenMap?: () => void;
-  className?: string;
 }) => {
   const delta = metric.changePct;
   const positive = delta >= 0;
@@ -68,7 +66,6 @@ const SummaryCard = ({
         highlighted
           ? "bg-gradient-to-br from-emerald-500/20 via-emerald-500/5 to-transparent shadow-xl shadow-emerald-500/30"
           : "bg-slate-900/40",
-        className,
       )}
     >
       <div className="flex items-start justify-between gap-4 text-sm text-white/70">
@@ -245,15 +242,8 @@ export const SummaryGrid = ({
     "ytd",
     "365d",
   ];
-
-  const GRID_PLACEMENT: Partial<
-    Record<CompstatWindowId, string>
-  > = {
-    "7d": "lg:col-start-1 lg:row-start-1",
-    "28d": "lg:col-start-1 lg:row-start-2",
-    ytd: "lg:col-start-3 lg:row-start-1",
-    "365d": "lg:col-start-3 lg:row-start-2",
-  };
+  const LEFT_COLUMN_WINDOWS: CompstatWindowId[] = ["7d", "28d"];
+  const RIGHT_COLUMN_WINDOWS: CompstatWindowId[] = ["ytd", "365d"];
 
   const orderForWindow = (id: CompstatWindowId) => {
     const index = ORDERED_WINDOWS.indexOf(id);
@@ -263,6 +253,34 @@ export const SummaryGrid = ({
   const sortedMetrics = [...metrics].sort(
     (a, b) => orderForWindow(a.id) - orderForWindow(b.id),
   );
+  const leftColumnMetrics = sortedMetrics.filter((metric) =>
+    LEFT_COLUMN_WINDOWS.includes(metric.id),
+  );
+  const rightColumnMetrics = sortedMetrics.filter((metric) =>
+    RIGHT_COLUMN_WINDOWS.includes(metric.id),
+  );
+
+  const renderMetricCard = (metric: CompstatMetric) => {
+    const hasDrilldown = Boolean(drilldown?.[metric.id]?.length);
+    const enablePatterns =
+      metric.id === "7d" && hasPatternData;
+    return (
+      <SummaryCard
+        key={metric.id}
+        metric={metric}
+        highlighted={metric.id === focusRange}
+        onOpenDrilldown={
+          hasDrilldown
+            ? () => setActiveWindow(metric.id)
+            : undefined
+        }
+        onOpenPatterns={
+          enablePatterns ? () => setPatternsOpen(true) : undefined
+        }
+        onOpenMap={onOpenMap}
+      />
+    );
+  };
 
   if (isLoading && metrics.length === 0) {
     return (
@@ -277,39 +295,32 @@ export const SummaryGrid = ({
     );
   }
 
+  const hasMapSlot = Boolean(mapSlot);
+  const gridContent = hasMapSlot ? (
+    <>
+      <div className="grid gap-4 md:grid-cols-2 lg:hidden">
+        {sortedMetrics.map((metric) => renderMetricCard(metric))}
+        <div className="md:col-span-2">{mapSlot}</div>
+      </div>
+      <div className="hidden items-stretch gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
+        <div className="grid gap-4">
+          {leftColumnMetrics.map((metric) => renderMetricCard(metric))}
+        </div>
+        <div className="flex h-full">{mapSlot}</div>
+        <div className="grid gap-4">
+          {rightColumnMetrics.map((metric) => renderMetricCard(metric))}
+        </div>
+      </div>
+    </>
+  ) : (
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {sortedMetrics.map((metric) => renderMetricCard(metric))}
+    </div>
+  );
+
   return (
     <>
-      <div className="grid items-stretch gap-4 md:grid-cols-2 lg:auto-rows-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
-        {sortedMetrics.map((metric) => {
-          const hasDrilldown = Boolean(
-            drilldown?.[metric.id]?.length,
-          );
-          const enablePatterns =
-            metric.id === "7d" && hasPatternData;
-          return (
-            <SummaryCard
-              key={metric.id}
-              metric={metric}
-              highlighted={metric.id === focusRange}
-              onOpenDrilldown={
-                hasDrilldown
-                  ? () => setActiveWindow(metric.id)
-                  : undefined
-              }
-              onOpenPatterns={
-                enablePatterns ? () => setPatternsOpen(true) : undefined
-              }
-              onOpenMap={onOpenMap}
-              className={GRID_PLACEMENT[metric.id]}
-            />
-          );
-        })}
-        {mapSlot ? (
-          <div className="w-full md:col-span-2 lg:col-start-2 lg:row-span-2 lg:row-start-1">
-            {mapSlot}
-          </div>
-        ) : null}
-      </div>
+      {gridContent}
       {activeWindow && drilldown?.[activeWindow]?.length ? (
         <OffenseDrilldownModal
           rows={drilldown[activeWindow]!}
