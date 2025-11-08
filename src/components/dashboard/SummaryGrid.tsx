@@ -6,14 +6,19 @@ import type {
   CompstatMetric,
   CompstatWindowId,
   OffenseDrilldownRow,
+  DayOfWeekStat,
+  HourOfDayStat,
 } from "@/lib/types";
 import { OffenseDrilldownModal } from "./OffenseDrilldownModal";
+import { PatternInsightsModal } from "./PatternInsightsModal";
 
 interface SummaryGridProps {
   metrics: CompstatMetric[];
   isLoading: boolean;
   focusRange: CompstatWindowId;
   drilldown?: Partial<Record<CompstatWindowId, OffenseDrilldownRow[]>>;
+  dayOfWeek: DayOfWeekStat[];
+  hourOfDay: HourOfDayStat[];
 }
 
 const badgeStyles: Record<CompstatMetric["classification"], string> = {
@@ -30,10 +35,12 @@ const SummaryCard = ({
   metric,
   highlighted,
   onOpenDrilldown,
+  onOpenPatterns,
 }: {
   metric: CompstatMetric;
   highlighted: boolean;
   onOpenDrilldown?: () => void;
+  onOpenPatterns?: () => void;
 }) => {
   const delta = metric.changePct;
   const positive = delta >= 0;
@@ -57,6 +64,32 @@ const SummaryCard = ({
       <div className="flex items-center justify-between text-sm text-white/70">
         <p className="font-medium">{metric.label}</p>
         <div className="flex items-center gap-2">
+          {onOpenPatterns ? (
+            <button
+              type="button"
+              onClick={onOpenPatterns}
+              className="rounded-full border border-white/20 p-1 text-white/60 transition hover:border-white/60 hover:text-white"
+              title="View day-of-week and hourly cadence"
+            >
+              <span className="sr-only">
+                View temporal patterns for {metric.label}
+              </span>
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                aria-hidden="true"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <path d="M4 5h16v14H4z" />
+                <path d="M8 5v14M16 5v14" />
+                <path d="M4 13h16" />
+                <path d="M7 17l2-2 2 2 2-2 2 2 2-2" />
+              </svg>
+            </button>
+          ) : null}
           {onOpenDrilldown ? (
             <button
               type="button"
@@ -127,9 +160,14 @@ export const SummaryGrid = ({
   isLoading,
   focusRange,
   drilldown,
+  dayOfWeek,
+  hourOfDay,
 }: SummaryGridProps) => {
   const [activeWindow, setActiveWindow] =
     useState<CompstatWindowId | null>(null);
+  const [patternsOpen, setPatternsOpen] = useState(false);
+  const hasPatternData =
+    (dayOfWeek?.length ?? 0) > 0 || (hourOfDay?.length ?? 0) > 0;
 
   useEffect(() => {
     if (
@@ -140,6 +178,12 @@ export const SummaryGrid = ({
       setActiveWindow(null);
     }
   }, [activeWindow, drilldown]);
+
+  useEffect(() => {
+    if (patternsOpen && !hasPatternData) {
+      setPatternsOpen(false);
+    }
+  }, [patternsOpen, hasPatternData]);
 
   if (isLoading && metrics.length === 0) {
     return (
@@ -161,6 +205,8 @@ export const SummaryGrid = ({
           const hasDrilldown = Boolean(
             drilldown?.[metric.id]?.length,
           );
+          const enablePatterns =
+            metric.id === "7d" && hasPatternData;
           return (
             <SummaryCard
               key={metric.id}
@@ -170,6 +216,9 @@ export const SummaryGrid = ({
                 hasDrilldown
                   ? () => setActiveWindow(metric.id)
                   : undefined
+              }
+              onOpenPatterns={
+                enablePatterns ? () => setPatternsOpen(true) : undefined
               }
             />
           );
@@ -183,6 +232,13 @@ export const SummaryGrid = ({
               ?.label ?? "Selected window"
           }
           onClose={() => setActiveWindow(null)}
+        />
+      ) : null}
+      {patternsOpen ? (
+        <PatternInsightsModal
+          dayOfWeek={dayOfWeek}
+          hourOfDay={hourOfDay}
+          onClose={() => setPatternsOpen(false)}
         />
       ) : null}
     </>

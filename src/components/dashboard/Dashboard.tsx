@@ -177,6 +177,13 @@ export const Dashboard = () => {
         isLoading={isLoading && !data}
         focusRange={filters.focusRange}
         drilldown={data?.drilldown}
+        dayOfWeek={data?.dayOfWeek ?? []}
+        hourOfDay={data?.hourOfDay ?? []}
+      />
+
+      <TrendCard
+        data={data?.trend ?? []}
+        isLoading={isLoading && !data}
       />
 
       <FilterBar
@@ -190,11 +197,6 @@ export const Dashboard = () => {
         availableCategories={availableCategories}
         isBusy={isLoading && !data}
         onReset={resetFilters}
-      />
-
-      <TrendCard
-        data={data?.trend ?? []}
-        isLoading={isLoading && !data}
       />
 
       <CrimeMap
