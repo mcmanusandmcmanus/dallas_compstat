@@ -13,6 +13,7 @@ import {
   fetchDistinctValues,
   fetchHourOfDayCounts,
   fetchIncidents,
+  fetchOffenseDetails,
   fetchTopOffenses,
 } from "./socrata";
 import type {
@@ -23,6 +24,7 @@ import type {
   DashboardFilters,
   TrendPoint,
   IncidentFeature,
+  OffenseDrilldownRow,
 } from "./types";
 
 const RESPONSE_CACHE = new Map<
@@ -31,6 +33,11 @@ const RESPONSE_CACHE = new Map<
 >();
 const RESPONSE_TTL_MS = 2 * 60 * 1000;
 const COMPSTAT_ZONE = "America/Chicago";
+const CRIME_AGAINST_ORDER: Record<string, number> = {
+  Person: 0,
+  Property: 1,
+  Society: 2,
+};
 let lastCompstatSuccessISO: string | null = null;
 
 const buildCacheKey = (
@@ -209,6 +216,81 @@ const summarizeIncidents = (items: IncidentFeature[], key: "offense" | "division
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 };
+
+const buildOffenseDrilldown = async (
+  windowId: CompstatWindowId,
+  reference: DateTime,
+  filters: DashboardFilters,
+): Promise<OffenseDrilldownRow[]> => {
+  const definition = getWindowDefinition(windowId, reference);
+  const [current, previous, yearAgo] = await Promise.all([
+    fetchOffenseDetails(definition.current, filters),
+    fetchOffenseDetails(definition.previous, filters),
+    fetchOffenseDetails(definition.yearAgo, filters),
+  ]);
+
+  const toMap = (
+    rows: Array<{ code: string; label: string; crimeAgainst: string; count: number }>,
+  ) => new Map(rows.map((row) => [row.code, row]));
+
+  const currentMap = toMap(current);
+  const previousMap = toMap(previous);
+  const yearAgoMap = toMap(yearAgo);
+
+  const metadata = new Map<string, { label: string; crimeAgainst: string }>();
+  const seed = (
+    rows: Array<{ code: string; label: string; crimeAgainst: string }>,
+  ) => {
+    rows.forEach((row) => {
+      if (!metadata.has(row.code)) {
+        metadata.set(row.code, {
+          label: row.label,
+          crimeAgainst: row.crimeAgainst,
+        });
+      }
+    });
+  };
+
+  seed(current);
+  seed(previous);
+  seed(yearAgo);
+
+  return Array.from(metadata.entries())
+    .map(([code, meta]) => {
+      const currentValue = currentMap.get(code)?.count ?? 0;
+      const previousValue = previousMap.get(code)?.count ?? 0;
+      const yearAgoValue = yearAgoMap.get(code)?.count ?? 0;
+
+      if (
+        currentValue === 0 &&
+        previousValue === 0 &&
+        yearAgoValue === 0
+      ) {
+        return null;
+      }
+
+      return {
+        code,
+        label: meta.label,
+        crimeAgainst: meta.crimeAgainst,
+        current: currentValue,
+        previous: previousValue,
+        yearAgo: yearAgoValue,
+        changePct: percentChange(currentValue, previousValue),
+        changePctYearAgo: percentChange(currentValue, yearAgoValue),
+        zScore: poissonZ(currentValue, previousValue),
+      };
+    })
+    .filter((row): row is OffenseDrilldownRow => Boolean(row))
+    .sort((a, b) => {
+      const aOrder = CRIME_AGAINST_ORDER[a.crimeAgainst] ?? 99;
+      const bOrder = CRIME_AGAINST_ORDER[b.crimeAgainst] ?? 99;
+      if (aOrder === bOrder) {
+        return b.current - a.current;
+      }
+      return aOrder - bOrder;
+    });
+};
 export const buildCompstatResponse = async (
   filters: DashboardFilters,
   focusRange: CompstatWindowId = DEFAULT_FOCUS_WINDOW,
@@ -301,6 +383,10 @@ export const buildCompstatResponse = async (
     divisionsPrevious,
   );
 
+  const drilldown7d = await buildOffenseDrilldown("7d", reference, filters);
+  const drilldownPayload =
+    drilldown7d.length > 0 ? { "7d": drilldown7d } : undefined;
+
   const focusMetric =
     windowMetrics.find((metric) => metric.id === focusRange) ??
     windowMetrics[0];
@@ -328,6 +414,7 @@ export const buildCompstatResponse = async (
     meta: { stale: false },
     dayOfWeek,
     hourOfDay,
+    drilldown: drilldownPayload,
   };
 
   RESPONSE_CACHE.set(cacheKey, {

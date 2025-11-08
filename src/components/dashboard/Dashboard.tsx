@@ -135,7 +135,7 @@ export const Dashboard = () => {
     <section className="flex flex-col gap-8">
       <header className="flex flex-col gap-4">
         <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">
-          Dallas Police Department
+          Dallas Police Department - Open Data API
         </p>
         <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
           CompStat Command Brief
@@ -150,6 +150,7 @@ export const Dashboard = () => {
         metrics={data?.windows ?? []}
         isLoading={isLoading && !data}
         focusRange={filters.focusRange}
+        drilldown={data?.drilldown}
       />
 
       <FilterBar

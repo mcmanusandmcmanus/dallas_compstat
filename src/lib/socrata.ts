@@ -155,6 +155,59 @@ export const fetchTopOffenses = async (
   }));
 };
 
+interface OffenseDetailRow {
+  label: string;
+  code: string;
+  crimeAgainst: string;
+  count: number;
+}
+
+const normalizeCrimeAgainst = (value?: string) => {
+  if (!value) return "Unclassified";
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "person") return "Person";
+  if (normalized === "property") return "Property";
+  if (normalized === "society") return "Society";
+  return value.trim();
+};
+
+export const fetchOffenseDetails = async (
+  range: DateRange,
+  filters: DashboardFilters,
+  limit = 100,
+): Promise<OffenseDetailRow[]> => {
+  const rows = await socrataFetch<
+    Array<{
+      category?: string;
+      code?: string;
+      crime_against?: string;
+      count?: string;
+    }>
+  >({
+    $select:
+      "nibrs_crime_category as category, nibrs_code as code, nibrs_crimeagainst as crime_against, count(incidentnum) as count",
+    $where: buildWhere(range, filters, [
+      "nibrs_crime_category IS NOT NULL",
+      "nibrs_code IS NOT NULL",
+      "nibrs_crimeagainst IS NOT NULL",
+    ]),
+    $group: "nibrs_crime_category, nibrs_code, nibrs_crimeagainst",
+    $order: "count DESC",
+    $limit: String(limit),
+  });
+
+  return rows.map((row) => {
+    const label = row.category?.trim() || row.code?.trim() || "Unspecified offense";
+    const code = row.code?.trim() || label;
+    return {
+      label,
+      code,
+      crimeAgainst: normalizeCrimeAgainst(row.crime_against),
+      count: Number(row.count ?? 0),
+    };
+  });
+};
+
 export const fetchDivisions = async (
   range: DateRange,
   filters: DashboardFilters,

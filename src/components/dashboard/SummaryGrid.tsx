@@ -1,15 +1,19 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import clsx from "clsx";
 import type {
   CompstatMetric,
   CompstatWindowId,
+  OffenseDrilldownRow,
 } from "@/lib/types";
+import { OffenseDrilldownModal } from "./OffenseDrilldownModal";
 
 interface SummaryGridProps {
   metrics: CompstatMetric[];
   isLoading: boolean;
   focusRange: CompstatWindowId;
+  drilldown?: Partial<Record<CompstatWindowId, OffenseDrilldownRow[]>>;
 }
 
 const badgeStyles: Record<CompstatMetric["classification"], string> = {
@@ -25,9 +29,11 @@ const badgeStyles: Record<CompstatMetric["classification"], string> = {
 const SummaryCard = ({
   metric,
   highlighted,
+  onOpenDrilldown,
 }: {
   metric: CompstatMetric;
   highlighted: boolean;
+  onOpenDrilldown?: () => void;
 }) => {
   const delta = metric.changePct;
   const positive = delta >= 0;
@@ -50,14 +56,40 @@ const SummaryCard = ({
     >
       <div className="flex items-center justify-between text-sm text-white/70">
         <p className="font-medium">{metric.label}</p>
-        <span
-          className={clsx(
-            "rounded-full px-3 py-1 text-xs font-semibold",
-            badgeStyles[metric.classification],
-          )}
-        >
-          {metric.classification}
-        </span>
+        <div className="flex items-center gap-2">
+          {onOpenDrilldown ? (
+            <button
+              type="button"
+              onClick={onOpenDrilldown}
+              className="rounded-full border border-white/20 p-1 text-white/60 transition hover:border-white/60 hover:text-white"
+              title="View offense drilldown"
+            >
+              <span className="sr-only">
+                Open {metric.label} drilldown
+              </span>
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                aria-hidden="true"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <rect x="4" y="5" width="16" height="14" rx="2" />
+                <path d="M4 11h16M10 5v14" />
+              </svg>
+            </button>
+          ) : null}
+          <span
+            className={clsx(
+              "rounded-full px-3 py-1 text-xs font-semibold",
+              badgeStyles[metric.classification],
+            )}
+          >
+            {metric.classification}
+          </span>
+        </div>
       </div>
 
       <p className="mt-4 text-4xl font-semibold leading-tight text-white">
@@ -94,7 +126,21 @@ export const SummaryGrid = ({
   metrics,
   isLoading,
   focusRange,
+  drilldown,
 }: SummaryGridProps) => {
+  const [activeWindow, setActiveWindow] =
+    useState<CompstatWindowId | null>(null);
+
+  useEffect(() => {
+    if (
+      activeWindow &&
+      (!drilldown?.[activeWindow] ||
+        drilldown[activeWindow]?.length === 0)
+    ) {
+      setActiveWindow(null);
+    }
+  }, [activeWindow, drilldown]);
+
   if (isLoading && metrics.length === 0) {
     return (
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -109,14 +155,36 @@ export const SummaryGrid = ({
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {metrics.map((metric) => (
-        <SummaryCard
-          key={metric.id}
-          metric={metric}
-          highlighted={metric.id === focusRange}
+    <>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {metrics.map((metric) => {
+          const hasDrilldown = Boolean(
+            drilldown?.[metric.id]?.length,
+          );
+          return (
+            <SummaryCard
+              key={metric.id}
+              metric={metric}
+              highlighted={metric.id === focusRange}
+              onOpenDrilldown={
+                hasDrilldown
+                  ? () => setActiveWindow(metric.id)
+                  : undefined
+              }
+            />
+          );
+        })}
+      </div>
+      {activeWindow && drilldown?.[activeWindow]?.length ? (
+        <OffenseDrilldownModal
+          rows={drilldown[activeWindow]!}
+          title={
+            metrics.find((metric) => metric.id === activeWindow)
+              ?.label ?? "Selected window"
+          }
+          onClose={() => setActiveWindow(null)}
         />
-      ))}
-    </div>
+      ) : null}
+    </>
   );
 };

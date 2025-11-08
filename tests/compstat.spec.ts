@@ -15,6 +15,20 @@ const socrataMocks = vi.hoisted(() => {
 
   return {
     fetchCountForRange: vi.fn(async () => 100),
+    fetchOffenseDetails: vi.fn(async () => [
+      {
+        label: 'ASSAULT OFFENSES',
+        code: '13A',
+        crimeAgainst: 'Person',
+        count: 24,
+      },
+      {
+        label: 'LARCENY/ THEFT OFFENSES',
+        code: '23',
+        crimeAgainst: 'Property',
+        count: 42,
+      },
+    ]),
     fetchTopOffenses: vi.fn(
       async (
         _range: unknown,
@@ -87,6 +101,7 @@ vi.mock('@/lib/socrata', () => socrataMocks);
 
 const {
   fetchCountForRange: mockFetchCountForRange,
+  fetchOffenseDetails: mockFetchOffenseDetails,
   fetchTopOffenses: mockFetchTopOffenses,
   fetchDivisions: mockFetchDivisions,
   fetchDistinctValues: mockFetchDistinctValues,
@@ -98,6 +113,7 @@ const {
 
 const clearAllMocks = () => {
   mockFetchCountForRange.mockClear();
+  mockFetchOffenseDetails.mockClear();
   mockFetchTopOffenses.mockClear();
   mockFetchDivisions.mockClear();
   mockFetchDistinctValues.mockClear();
@@ -141,6 +157,14 @@ describe('buildCompstatResponse', () => {
     const second = await buildCompstatResponse({}, '28d');
     expect(second.topOffenses.length).toBeGreaterThan(0);
     expect(mockFetchDailyTrend).not.toHaveBeenCalled();
+  });
+
+  it('includes a Last 7 Days offense drilldown table', async () => {
+    const result = await buildCompstatResponse({}, '28d');
+    const drilldown = result.drilldown?.['7d'];
+    expect(drilldown).toBeDefined();
+    expect(drilldown?.[0].crimeAgainst).toBe('Person');
+    expect(mockFetchOffenseDetails).toHaveBeenCalledTimes(3);
   });
 });
 

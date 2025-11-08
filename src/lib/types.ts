@@ -23,6 +23,18 @@ export interface CompstatMetric {
   classification: "Spike" | "Elevated" | "Normal" | "Below Normal";
 }
 
+export interface OffenseDrilldownRow {
+  code: string;
+  label: string;
+  crimeAgainst: string;
+  current: number;
+  previous: number;
+  yearAgo: number;
+  changePct: number;
+  changePctYearAgo: number;
+  zScore: number;
+}
+
 export interface TrendPoint {
   date: string;
   endDate?: string;
@@ -84,5 +96,6 @@ export interface CompstatResponse {
   };
   dayOfWeek: DayOfWeekStat[];
   hourOfDay: HourOfDayStat[];
+  drilldown?: Partial<Record<CompstatWindowId, OffenseDrilldownRow[]>>;
 }
 
