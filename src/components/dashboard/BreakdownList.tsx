@@ -1,5 +1,6 @@
-'use client';
+"use client";
 
+import type { ReactNode } from "react";
 import type { BreakdownRow } from "@/lib/types";
 
 interface BreakdownListProps {
@@ -9,6 +10,8 @@ interface BreakdownListProps {
   emptyLabel: string;
   onSelectItem?: (label: string) => void;
   selectedLabel?: string;
+  icon?: ReactNode;
+  iconLabel?: string;
 }
 
 export const BreakdownList = ({
@@ -18,6 +21,8 @@ export const BreakdownList = ({
   emptyLabel,
   onSelectItem,
   selectedLabel,
+  icon,
+  iconLabel,
 }: BreakdownListProps) => {
   if (isLoading && items.length === 0) {
     return (
@@ -30,11 +35,23 @@ export const BreakdownList = ({
   return (
     <section className="rounded-2xl border border-white/10 bg-slate-900/40 p-5 text-white shadow-lg shadow-slate-900/30">
       <header className="flex flex-wrap items-center justify-between gap-2 text-sm text-white/70">
-        <div className="flex flex-col">
-          <p className="font-semibold">{title}</p>
-          <span className="text-xs uppercase tracking-widest text-emerald-200">
-            Current focus window
-          </span>
+        <div className="flex items-center gap-3">
+          {icon ? (
+            <span
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 text-emerald-200 shadow-inner shadow-emerald-500/20"
+              aria-hidden={iconLabel ? undefined : true}
+              role={iconLabel ? "img" : undefined}
+              aria-label={iconLabel}
+            >
+              {icon}
+            </span>
+          ) : null}
+          <div className="flex flex-col">
+            <p className="font-semibold">{title}</p>
+            <span className="text-xs uppercase tracking-widest text-emerald-200">
+              Current focus window
+            </span>
+          </div>
         </div>
         <p className="text-white/50">Top {items.length}</p>
       </header>

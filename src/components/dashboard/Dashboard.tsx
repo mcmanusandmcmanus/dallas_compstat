@@ -69,6 +69,77 @@ const BASE_FILTERS = {
   offenseCategory: "ALL",
 };
 
+const ICONS = {
+  offenses: (
+    <svg
+      className="h-5 w-5"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M5 5.5v13" />
+      <path d="M12 5.5v13" />
+      <path d="M19 5.5v13" />
+      <path d="M2 15h6" />
+      <path d="M9 11h6" />
+      <path d="M16 8h6" />
+    </svg>
+  ),
+  divisions: (
+    <svg
+      className="h-5 w-5"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 21c3-3.5 6-7 6-10a6 6 0 1 0-12 0c0 3 3 6.5 6 10Z" />
+      <circle cx="12" cy="11" r="2.4" />
+    </svg>
+  ),
+  summary: (
+    <svg
+      className="h-5 w-5"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 7h16" />
+      <path d="M4 12h10" />
+      <path d="M4 17h7" />
+      <path d="M17 10v7l3-2" />
+    </svg>
+  ),
+  table: (
+    <svg
+      className="h-5 w-5"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3 9h18" />
+      <path d="M9 9v10" />
+      <path d="M15 9v10" />
+    </svg>
+  ),
+};
+
 export const Dashboard = () => {
   const [filters, setFilters] = useState(BASE_FILTERS);
   const [mapExpanded, setMapExpanded] = useState(false);
@@ -253,12 +324,16 @@ export const Dashboard = () => {
               ? filters.offenseCategory
               : undefined
           }
+          icon={ICONS.offenses}
+          iconLabel="Stacked bars icon"
         />
         <BreakdownList
           title="Divisions by volume"
           items={data?.divisionLeaders ?? []}
           isLoading={isLoading && !data}
           emptyLabel="No divisions to rank."
+          icon={ICONS.divisions}
+          iconLabel="Location pin icon"
         />
       </div>
 
@@ -267,11 +342,13 @@ export const Dashboard = () => {
           categories={data?.incidentCategories ?? []}
           divisions={data?.incidentDivisions ?? []}
           isLoading={isLoading && !data}
+          icon={ICONS.summary}
         />
         <IncidentTable
           incidents={data?.incidents ?? []}
           isLoading={isLoading && !data}
           maxRows={7}
+          icon={ICONS.table}
         />
       </div>
       {showReference ? (

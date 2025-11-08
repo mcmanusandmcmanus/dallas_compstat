@@ -1,9 +1,11 @@
+import type { ReactNode } from "react";
 import type { BreakdownRow } from "@/lib/types";
 
 interface IncidentSummaryProps {
   categories: BreakdownRow[];
   divisions: BreakdownRow[];
   isLoading: boolean;
+  icon?: ReactNode;
 }
 
 const SummaryList = ({
@@ -33,6 +35,7 @@ export const IncidentSummary = ({
   categories,
   divisions,
   isLoading,
+  icon,
 }: IncidentSummaryProps) => {
   if (isLoading && !categories.length && !divisions.length) {
     return (
@@ -43,11 +46,18 @@ export const IncidentSummary = ({
   return (
     <section className="rounded-2xl border border-white/10 bg-slate-950/40 p-5 text-white shadow-lg shadow-slate-900/30">
       <header className="flex flex-wrap items-center justify-between gap-2 text-sm text-white/70">
-        <div>
-          <p className="font-semibold">Latest incidents overview</p>
-          <p className="text-xs uppercase tracking-widest text-emerald-200">
-            Current focus window
-          </p>
+        <div className="flex items-center gap-3">
+          {icon ? (
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 text-emerald-200 shadow-inner shadow-emerald-500/20" aria-hidden="true">
+              {icon}
+            </span>
+          ) : null}
+          <div>
+            <p className="font-semibold">Latest incidents overview</p>
+            <p className="text-xs uppercase tracking-widest text-emerald-200">
+              Current focus window
+            </p>
+          </div>
         </div>
         <p className="text-xs text-white/50">Top groupings from the sampled incidents</p>
       </header>

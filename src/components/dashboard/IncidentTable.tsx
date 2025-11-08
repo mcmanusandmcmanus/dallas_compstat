@@ -1,15 +1,17 @@
-﻿"use client";
+"use client";
 
+import type { ReactNode } from "react";
 import type { IncidentFeature } from "@/lib/types";
 
 interface IncidentTableProps {
   incidents: IncidentFeature[];
   isLoading: boolean;
   maxRows?: number;
+  icon?: ReactNode;
 }
 
 const formatDateTime = (value: string) => {
-  if (!value) return "—";
+  if (!value) return "-";
   const date = new Date(value);
   return date.toLocaleString("en-US", {
     month: "short",
@@ -23,6 +25,7 @@ export const IncidentTable = ({
   incidents,
   isLoading,
   maxRows = 7,
+  icon,
 }: IncidentTableProps) => {
   if (isLoading && incidents.length === 0) {
     return (
@@ -35,13 +38,25 @@ export const IncidentTable = ({
   return (
     <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-slate-900/40 text-white shadow-lg shadow-slate-900/30">
       <header className="border-b border-white/5 px-5 py-4">
-        <p className="text-sm font-semibold text-white/80">
-          Latest incidents ({display.length.toLocaleString()} of {incidents.length.toLocaleString()})
-        </p>
-        <p className="text-xs uppercase tracking-widest text-emerald-200">
-          Current focus window
-        </p>
-        <p className="text-xs text-white/60">
+        <div className="flex items-center gap-3">
+          {icon ? (
+            <span
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 text-emerald-200 shadow-inner shadow-emerald-500/20"
+              aria-hidden="true"
+            >
+              {icon}
+            </span>
+          ) : null}
+          <div>
+            <p className="text-sm font-semibold text-white/80">
+              Latest incidents ({display.length.toLocaleString()} of {incidents.length.toLocaleString()})
+            </p>
+            <p className="text-xs uppercase tracking-widest text-emerald-200">
+              Current focus window
+            </p>
+          </div>
+        </div>
+        <p className="mt-2 text-xs text-white/60">
           Live sample of geocoded incidents in the selected window. Showing the most recent {display.length} entries.
         </p>
       </header>
