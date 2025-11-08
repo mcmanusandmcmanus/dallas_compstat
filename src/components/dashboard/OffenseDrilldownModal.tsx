@@ -114,9 +114,9 @@ export const OffenseDrilldownModal = ({
                     const zClass =
                       row.zScore >= 3.5
                         ? "text-rose-300"
-                        : row.zScore >= 1
+                        : row.zScore >= 2
                           ? "text-amber-200"
-                          : row.zScore <= -1
+                          : row.zScore <= -2
                             ? "text-sky-200"
                             : "text-white";
                     return (

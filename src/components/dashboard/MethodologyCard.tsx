@@ -52,7 +52,8 @@ export const MethodologyCard = ({
             Significance.
           </span>{" "}
           Poisson z-scores use an Anscombe transform for counts under 10.
-          Spike &ge; 3.5, Elevated &ge; 1.0. Bands in the trend card show &plusmn; 3 sigma
+          Spike &ge; 3.5, Elevated 2.0-3.4, Normal between -2.0 and +2.0, and
+          Below Normal &le; -2.0. Bands in the trend card show &plusmn; 3 sigma
           around the rolling average.
         </li>
         <li>

@@ -90,8 +90,8 @@ const poissonZ = (current: number, previous: number) => {
 
 const zBand = (value: number) => {
   if (value >= 3.5) return "Spike";
-  if (value >= 1) return "Elevated";
-  if (value <= -1) return "Below Normal";
+  if (value >= 2) return "Elevated";
+  if (value <= -2) return "Below Normal";
   return "Normal";
 };
 
