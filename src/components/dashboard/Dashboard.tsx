@@ -6,8 +6,6 @@ import { useCallback, useMemo, useState } from "react";
 
 import useSWR from "swr";
 
-import dynamic from "next/dynamic";
-
 import type { CompstatResponse, CompstatWindowId } from "@/lib/types";
 
 import { FilterBar } from "./FilterBar";
@@ -16,19 +14,7 @@ import { SummaryGrid } from "./SummaryGrid";
 
 import { TrendCard } from "./TrendCard";
 
-import { BreakdownList } from "./BreakdownList";
-
-import { IncidentTable } from "./IncidentTable";
-
-import { FocusNarrative } from "./FocusNarrative";
-
 import { MethodologyCard } from "./MethodologyCard";
-
-import { IncidentSummary } from "./IncidentSummary";
-
-import { DayOfWeekChart } from "./DayOfWeekChart";
-
-import { HourlyPatternChart } from "./HourlyPatternChart";
 import { CrimeCodeReferenceModal } from "./CrimeCodeReferenceModal";
 
 
@@ -48,16 +34,6 @@ const SWR_OPTIONS = {
   keepPreviousData: true,
 };
 
-const CrimeMap = dynamic(
-  () => import("./CrimeMap").then((mod) => mod.CrimeMap),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-[420px] w-full animate-pulse rounded-2xl border border-white/5 bg-white/5" />
-    ),
-  },
-);
-
 const withAllOption = (items: string[]) => [
   "ALL",
   ...items.filter((item) => item && item.trim().length > 0),
@@ -69,80 +45,8 @@ const BASE_FILTERS = {
   offenseCategory: "ALL",
 };
 
-const ICONS = {
-  offenses: (
-    <svg
-      className="h-5 w-5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M5 5.5v13" />
-      <path d="M12 5.5v13" />
-      <path d="M19 5.5v13" />
-      <path d="M2 15h6" />
-      <path d="M9 11h6" />
-      <path d="M16 8h6" />
-    </svg>
-  ),
-  divisions: (
-    <svg
-      className="h-5 w-5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 21c3-3.5 6-7 6-10a6 6 0 1 0-12 0c0 3 3 6.5 6 10Z" />
-      <circle cx="12" cy="11" r="2.4" />
-    </svg>
-  ),
-  summary: (
-    <svg
-      className="h-5 w-5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M4 7h16" />
-      <path d="M4 12h10" />
-      <path d="M4 17h7" />
-      <path d="M17 10v7l3-2" />
-    </svg>
-  ),
-  table: (
-    <svg
-      className="h-5 w-5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="M3 9h18" />
-      <path d="M9 9v10" />
-      <path d="M15 9v10" />
-    </svg>
-  ),
-};
-
 export const Dashboard = () => {
   const [filters, setFilters] = useState(BASE_FILTERS);
-  const [mapExpanded, setMapExpanded] = useState(false);
   const [showReference, setShowReference] = useState(false);
 
   const query = useMemo(() => {
@@ -250,14 +154,19 @@ export const Dashboard = () => {
         drilldown={data?.drilldown}
         dayOfWeek={data?.dayOfWeek ?? []}
         hourOfDay={data?.hourOfDay ?? []}
-        mapSlot={
-          <CrimeMap
-            incidents={data?.incidents ?? []}
-            isExpanded={mapExpanded}
-            onToggleExpand={() => setMapExpanded((prev) => !prev)}
-            className="h-full"
-          />
+        incidents={data?.incidents ?? []}
+        focusNarrative={data?.focusNarrative}
+        topOffenses={data?.topOffenses ?? []}
+        divisionLeaders={data?.divisionLeaders ?? []}
+        incidentCategories={data?.incidentCategories ?? []}
+        incidentDivisions={data?.incidentDivisions ?? []}
+        selectedOffenseCategory={
+          filters.offenseCategory !== "ALL"
+            ? filters.offenseCategory
+            : undefined
         }
+        onSelectOffenseCategory={handleCategoryDrilldown}
+        onFocusRangeChange={handleFocusChange}
       />
 
       <TrendCard
@@ -295,61 +204,6 @@ export const Dashboard = () => {
         isStale={data?.meta?.stale}
       />
 
-      <FocusNarrative
-        narrative={data?.focusNarrative}
-        isLoading={isLoading && !data}
-      />
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <DayOfWeekChart
-          data={data?.dayOfWeek ?? []}
-          isLoading={isLoading && !data}
-        />
-        <HourlyPatternChart
-          data={data?.hourOfDay ?? []}
-          isLoading={isLoading && !data}
-        />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <BreakdownList
-          title="Top offense categories"
-          items={data?.topOffenses ?? []}
-          isLoading={isLoading && !data}
-          emptyLabel="No offenses recorded in this window."
-          onSelectItem={handleCategoryDrilldown}
-          selectedLabel={
-            filters.offenseCategory !== "ALL"
-              ? filters.offenseCategory
-              : undefined
-          }
-          icon={ICONS.offenses}
-          iconLabel="Stacked bars icon"
-        />
-        <BreakdownList
-          title="Divisions by volume"
-          items={data?.divisionLeaders ?? []}
-          isLoading={isLoading && !data}
-          emptyLabel="No divisions to rank."
-          icon={ICONS.divisions}
-          iconLabel="Location pin icon"
-        />
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <IncidentSummary
-          categories={data?.incidentCategories ?? []}
-          divisions={data?.incidentDivisions ?? []}
-          isLoading={isLoading && !data}
-          icon={ICONS.summary}
-        />
-        <IncidentTable
-          incidents={data?.incidents ?? []}
-          isLoading={isLoading && !data}
-          maxRows={7}
-          icon={ICONS.table}
-        />
-      </div>
       {showReference ? (
         <CrimeCodeReferenceModal onClose={() => setShowReference(false)} />
       ) : null}
