@@ -32,13 +32,7 @@ export const FocusWindowSelector = ({
           <p className="text-xs uppercase tracking-[0.35em] text-emerald-300">
             Focus window
           </p>
-          <p className="text-sm text-white/70">
-            Choose the time horizon for the summary cards and insights.
-          </p>
         </div>
-        <p className="text-xs text-white/60">
-          Comparisons include prior window and same dates one year ago.
-        </p>
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {FOCUS_OPTIONS.map((option) => {
@@ -65,4 +59,3 @@ export const FocusWindowSelector = ({
     </section>
   );
 };
-
