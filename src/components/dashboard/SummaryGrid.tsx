@@ -547,7 +547,7 @@ const buildInsightActions = (
   const isSwitchingFocus =
     pendingInsight?.metricId === metric.id;
   const canOpenDrilldown = options?.canOpenDrilldown ?? false;
-  return [
+  const actions: SummaryCardAction[] = [
       {
         id: "map",
         label: "Open hot spot map",
@@ -609,17 +609,18 @@ const buildInsightActions = (
         disabled:
           isSwitchingFocus || !insightAvailability.incidentTable,
       },
-      {
-        id: "drilldown",
-        label: "View Validation Table drilldown",
-        icon: INSIGHT_ICONS.drilldown,
-        onClick: options?.onOpenDrilldown,
-        disabled: isSwitchingFocus || !canOpenDrilldown,
-        tooltip: canOpenDrilldown
-          ? "Open the detailed offense drilldown"
-          : "Drilldown available only where data is sampled.",
-      },
   ];
+  if (canOpenDrilldown && options?.onOpenDrilldown) {
+    actions.push({
+      id: "drilldown",
+      label: "View Validation Table drilldown",
+      icon: INSIGHT_ICONS.drilldown,
+      onClick: options.onOpenDrilldown,
+      disabled: isSwitchingFocus,
+      tooltip: "Open the detailed offense drilldown",
+    });
+  }
+  return actions;
 };
 
   const renderMetricCard = (metric: CompstatMetric) => {
