@@ -622,12 +622,34 @@ const buildInsightActions = (metric: CompstatMetric): SummaryCardAction[] => {
   }
 
   const hasMapSlot = Boolean(mapSlot);
+  const mapTemporarilyHidden = Boolean(activeInsight);
+  const renderMapSlot = () => {
+    if (!hasMapSlot) {
+      return null;
+    }
+    if (mapTemporarilyHidden) {
+      return (
+        <div className="hidden h-full w-full items-center justify-center rounded-2xl border border-white/10 bg-slate-900/40 text-sm text-white/60 lg:flex">
+          Map is hidden while an insight is open
+        </div>
+      );
+    }
+    return mapSlot;
+  };
   const gridContent = hasMapSlot ? (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.5fr)_minmax(0,0.85fr)]">
       <div className="order-1 grid gap-4 lg:order-none">
         {leftColumnMetrics.map((metric) => renderMetricCard(metric))}
       </div>
-      <div className="order-2 flex h-full lg:order-none">{mapSlot}</div>
+      <div
+        className={clsx(
+          "order-2 flex h-full lg:order-none",
+          mapTemporarilyHidden && "pointer-events-none",
+        )}
+        aria-hidden={mapTemporarilyHidden}
+      >
+        {renderMapSlot()}
+      </div>
       <div className="order-3 grid gap-4 lg:order-none">
         {rightColumnMetrics.map((metric) => renderMetricCard(metric))}
       </div>
