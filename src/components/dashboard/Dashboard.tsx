@@ -154,10 +154,32 @@ export const Dashboard = () => {
         <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
           CompStat Command Brief
         </h1>
-        <p className="text-base text-white/70 md:text-lg">
-          Real-time NIBRS offenses, spatial hot spots, and Poisson significance bands built directly on the City of Dallas open
-          dataset. Adjust the division, offense mix, or time horizon to generate a meeting-ready brief in seconds.
-        </p>
+        <nav className="flex flex-wrap gap-3 text-sm text-white/70">
+          <a
+            href="#about-data"
+            className="rounded-full border border-white/15 px-4 py-2 uppercase tracking-[0.25em] transition hover:border-white/40 hover:text-white"
+          >
+            About the Data
+          </a>
+          <a
+            href="#crime-analysis"
+            className="rounded-full border border-white/15 px-4 py-2 uppercase tracking-[0.25em] transition hover:border-white/40 hover:text-white"
+          >
+            Crime &amp; Intelligence Analysis
+          </a>
+          <a
+            href="#executive-insights"
+            className="rounded-full border border-white/15 px-4 py-2 uppercase tracking-[0.25em] transition hover:border-white/40 hover:text-white"
+          >
+            Executive Insights
+          </a>
+          <a
+            href="#data-science"
+            className="rounded-full border border-white/15 px-4 py-2 uppercase tracking-[0.25em] transition hover:border-white/40 hover:text-white"
+          >
+            Data Science Lab
+          </a>
+        </nav>
       </header>
 
       <SummaryGrid
