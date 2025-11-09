@@ -123,6 +123,16 @@ const RANGE_ICONS: Partial<Record<CompstatWindowId, ReactNode>> = {
   ),
 };
 
+const WINDOW_NOTES: Record<CompstatWindowId, string> = {
+  "7d":
+    "Rolling 7-day total vs the immediately prior 7 days and the same dates one year ago.",
+  "28d":
+    "Rolling 28-day total with matching 28-day prior and year-ago comparisons.",
+  ytd: "Year-to-date tally vs last year-to-date span and the previous YTD window.",
+  "365d":
+    "Trailing 365-day total contrasted with the prior 365 days and year-ago period.",
+};
+
 type InsightType =
   | "map"
   | "narrative"
@@ -130,7 +140,8 @@ type InsightType =
   | "hourly"
   | "breakdown"
   | "incidentSummary"
-  | "incidentTable";
+  | "incidentTable"
+  | "drilldown";
 
 interface SummaryCardAction {
   id: InsightType;
@@ -275,22 +286,40 @@ const INSIGHT_ICONS: Record<InsightType, ReactNode> = {
       <path d="M10 5v14" />
     </svg>
   ),
+  drilldown: (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 6h4v8H4z" />
+      <path d="M10 10h4v10h-4z" />
+      <path d="M16 4h4v12h-4z" />
+      <path d="M12 18l2 2 2-2" />
+    </svg>
+  ),
 };
 
 const SummaryCard = ({
   metric,
   highlighted,
-  onOpenDrilldown,
   onOpenZScore,
   actions,
   icon,
+  windowNote,
 }: {
   metric: CompstatMetric;
   highlighted: boolean;
-  onOpenDrilldown?: () => void;
   onOpenZScore?: (metric: CompstatMetric) => void;
   actions: SummaryCardAction[];
   icon?: ReactNode;
+  windowNote?: string;
 }) => {
   const delta = metric.changePct;
   const positive = delta >= 0;
@@ -301,7 +330,7 @@ const SummaryCard = ({
   const yearPositive = deltaYear >= 0;
   const yearColor = yearPositive ? "text-sky-300" : "text-rose-300";
   const yearArrow = yearPositive ? "↑" : "↓";
-  const hasActions = actions.length > 0 || Boolean(onOpenDrilldown);
+  const hasActions = actions.length > 0;
 
   return (
     <div
@@ -342,6 +371,9 @@ const SummaryCard = ({
             z = {metric.zScore.toFixed(1)}
           </button>
         </div>
+        {windowNote ? (
+          <p className="mt-1 text-xs text-white/60">{windowNote}</p>
+        ) : null}
         {hasActions ? (
           <div className="mt-3 flex flex-col gap-3">
             {actions.length ? (
@@ -362,20 +394,6 @@ const SummaryCard = ({
                   </button>
                 ))}
               </div>
-            ) : null}
-            {onOpenDrilldown ? (
-              <button
-                type="button"
-                onClick={onOpenDrilldown}
-                className="rounded-xl border border-sky-400/30 bg-slate-900/30 p-3 text-left text-white transition hover:border-sky-300 hover:bg-slate-900/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
-              >
-                <p className="text-sm font-semibold">
-                  View Validation Table drilldown
-                </p>
-                <p className="text-xs text-white/70">
-                  Detailed offense mix for {metric.label}
-                </p>
-              </button>
             ) : null}
           </div>
         ) : null}
@@ -511,19 +529,24 @@ export const SummaryGrid = ({
     breakdown:
       (topOffenses?.length ?? 0) > 0 ||
       (divisionLeaders?.length ?? 0) > 0,
-    incidentSummary:
-      (incidentCategories?.length ?? 0) > 0 ||
-      (incidentDivisions?.length ?? 0) > 0,
-    incidentTable: incidents.length > 0,
-  };
+  incidentSummary:
+    (incidentCategories?.length ?? 0) > 0 ||
+    (incidentDivisions?.length ?? 0) > 0,
+  incidentTable: incidents.length > 0,
+  drilldown: true,
+};
   const defaultInsightLabel =
     metrics.find((entry) => entry.id === focusRange)?.label ??
     "Current focus window";
   const activeInsightLabel = insightMetricLabel ?? defaultInsightLabel;
 
-const buildInsightActions = (metric: CompstatMetric): SummaryCardAction[] => {
+const buildInsightActions = (
+  metric: CompstatMetric,
+  options?: { onOpenDrilldown?: () => void; canOpenDrilldown?: boolean },
+): SummaryCardAction[] => {
   const isSwitchingFocus =
     pendingInsight?.metricId === metric.id;
+  const canOpenDrilldown = options?.canOpenDrilldown ?? false;
   return [
       {
         id: "map",
@@ -586,6 +609,16 @@ const buildInsightActions = (metric: CompstatMetric): SummaryCardAction[] => {
         disabled:
           isSwitchingFocus || !insightAvailability.incidentTable,
       },
+      {
+        id: "drilldown",
+        label: "View Validation Table drilldown",
+        icon: INSIGHT_ICONS.drilldown,
+        onClick: options?.onOpenDrilldown,
+        disabled: isSwitchingFocus || !canOpenDrilldown,
+        tooltip: canOpenDrilldown
+          ? "Open the detailed offense drilldown"
+          : "Drilldown available only where data is sampled.",
+      },
   ];
 };
 
@@ -595,15 +628,19 @@ const buildInsightActions = (metric: CompstatMetric): SummaryCardAction[] => {
     const openDrilldownHandler = hasDrilldown
       ? () => setActiveWindow(metric.id)
       : undefined;
+    const windowNote = WINDOW_NOTES[metric.id];
     return (
       <SummaryCard
         key={metric.id}
         metric={metric}
         highlighted={isFocusMetric}
-        onOpenDrilldown={openDrilldownHandler}
-        actions={buildInsightActions(metric)}
+        actions={buildInsightActions(metric, {
+          onOpenDrilldown: openDrilldownHandler,
+          canOpenDrilldown: hasDrilldown,
+        })}
         onOpenZScore={(entry) => setZDetailsMetric(entry)}
         icon={RANGE_ICONS[metric.id]}
+        windowNote={windowNote}
       />
     );
   };
