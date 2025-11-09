@@ -305,9 +305,11 @@ export const buildCompstatResponse = async (
   const windowDefinitions = getAllWindowDefinitions(reference);
   const windowMetrics: CompstatMetric[] = await Promise.all(
     windowDefinitions.map(async (definition) => {
-      const current = await fetchCountForRange(definition.current, filters);
-      const previous = await fetchCountForRange(definition.previous, filters);
-      const yearAgo = await fetchCountForRange(definition.yearAgo, filters);
+      const [current, previous, yearAgo] = await Promise.all([
+        fetchCountForRange(definition.current, filters),
+        fetchCountForRange(definition.previous, filters),
+        fetchCountForRange(definition.yearAgo, filters),
+      ]);
       const changePct = percentChange(current, previous);
       const changePctYearAgo = percentChange(current, yearAgo);
       const zScore = poissonZ(current, previous);
@@ -383,9 +385,26 @@ export const buildCompstatResponse = async (
     divisionsPrevious,
   );
 
-  const drilldown7d = await buildOffenseDrilldown("7d", reference, filters);
-  const drilldownPayload =
-    drilldown7d.length > 0 ? { "7d": drilldown7d } : undefined;
+  const drilldownEntries = await Promise.all(
+    windowDefinitions.map(async (definition) => {
+      const rows = await buildOffenseDrilldown(
+        definition.id,
+        reference,
+        filters,
+      );
+      return { id: definition.id, rows };
+    }),
+  );
+  const drilldownPayload = drilldownEntries.reduce<
+    Partial<Record<CompstatWindowId, OffenseDrilldownRow[]>>
+  >((acc, entry) => {
+    if (entry.rows.length > 0) {
+      acc[entry.id] = entry.rows;
+    }
+    return acc;
+  }, {});
+  const drilldownData =
+    Object.keys(drilldownPayload).length > 0 ? drilldownPayload : undefined;
 
   const focusMetric =
     windowMetrics.find((metric) => metric.id === focusRange) ??
@@ -414,7 +433,7 @@ export const buildCompstatResponse = async (
     meta: { stale: false },
     dayOfWeek,
     hourOfDay,
-    drilldown: drilldownPayload,
+    drilldown: drilldownData,
   };
 
   RESPONSE_CACHE.set(cacheKey, {
