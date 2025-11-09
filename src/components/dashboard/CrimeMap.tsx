@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CircleMarker,
   MapContainer,
@@ -55,6 +55,8 @@ export const CrimeMap = ({
   const hasIncidents = incidents.length > 0;
   const hasCluster = incidents.length > 1;
   const mapRef = useRef<LeafletMap | null>(null);
+  // Keep a reference to the heat layer so we can update/remove it
+  const heatLayerRef = useRef<any>(null);
   const bounds = useMemo(
     () => computeBounds(incidents),
     [incidents],
@@ -120,6 +122,68 @@ export const CrimeMap = ({
     }, 60);
     return () => window.clearTimeout(timeout);
   }, [isExpanded, hasIncidents, incidents.length]);
+
+  // Add/update a heatmap layer using leaflet.heat (client-only plugin)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    let cancelled = false;
+
+    (async () => {
+      const L = await import("leaflet");
+      // Dynamically load the plugin so SSR and bundling stay clean
+      await import("leaflet.heat");
+
+      // Ensure a dedicated pane exists so the heat sits below vector markers
+      if (!map.getPane("heat")) {
+        const pane = map.createPane("heat");
+        pane.style.zIndex = "350"; // below overlayPane (400) and markerPane (600)
+      }
+
+      // Convert incidents to [lat, lng, weight]
+      const points: [number, number, number][] = incidents.map((i) => [
+        i.latitude,
+        i.longitude,
+        1,
+      ]);
+
+      const nextLayer = (L as any).heatLayer(points, {
+        pane: "heat",
+        radius: 25,
+        blur: 15,
+        maxZoom: 17,
+        minOpacity: 0.25,
+        gradient: {
+          0.2: "#4ade80",
+          0.4: "#22c55e",
+          0.6: "#16a34a",
+          0.8: "#059669",
+          1.0: "#065f46",
+        },
+      });
+
+      if (!cancelled) {
+        // Replace any existing layer
+        if (heatLayerRef.current) {
+          try {
+            heatLayerRef.current.remove();
+          } catch {}
+        }
+        heatLayerRef.current = nextLayer.addTo(map);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (heatLayerRef.current) {
+        try {
+          heatLayerRef.current.remove();
+        } catch {}
+        heatLayerRef.current = null;
+      }
+    };
+  }, [incidents]);
 
   return (
     <div
