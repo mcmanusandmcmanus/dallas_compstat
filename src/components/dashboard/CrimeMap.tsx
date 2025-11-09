@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   CircleMarker,
   MapContainer,
@@ -8,6 +8,7 @@ import {
   TileLayer,
 } from "react-leaflet";
 import type {
+  Map as LeafletMap,
   FitBoundsOptions,
   LatLngBoundsExpression,
   LatLngExpression,
@@ -53,6 +54,7 @@ export const CrimeMap = ({
 }: CrimeMapProps) => {
   const hasIncidents = incidents.length > 0;
   const hasCluster = incidents.length > 1;
+  const mapRef = useRef<LeafletMap | null>(null);
   const bounds = useMemo(
     () => computeBounds(incidents),
     [incidents],
@@ -70,6 +72,16 @@ export const CrimeMap = ({
   const mapHeight = isExpanded
     ? "h-[520px] lg:h-[640px]"
     : "h-[360px] lg:h-[480px]";
+  const attachMapRef = useCallback((map: LeafletMap | null) => {
+    if (!map) {
+      mapRef.current = null;
+      return;
+    }
+    mapRef.current = map;
+    window.requestAnimationFrame(() => {
+      map.invalidateSize();
+    });
+  }, []);
   const markerNodes = useMemo(
     () =>
       incidents.map((incident) => (
@@ -98,6 +110,16 @@ export const CrimeMap = ({
       )),
     [incidents],
   );
+
+  useEffect(() => {
+    if (!mapRef.current) {
+      return;
+    }
+    const timeout = window.setTimeout(() => {
+      mapRef.current?.invalidateSize();
+    }, 60);
+    return () => window.clearTimeout(timeout);
+  }, [isExpanded, hasIncidents, incidents.length]);
 
   return (
     <div
@@ -152,6 +174,7 @@ export const CrimeMap = ({
             "h-full w-full text-black transition duration-300",
             !hasIncidents && "blur-sm opacity-30",
           )}
+          ref={attachMapRef}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
