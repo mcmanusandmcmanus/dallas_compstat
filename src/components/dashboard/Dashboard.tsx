@@ -11,7 +11,6 @@ import dynamic from "next/dynamic";
 import type { CompstatResponse, CompstatWindowId } from "@/lib/types";
 
 import { FilterBar } from "./FilterBar";
-import { FocusWindowSelector } from "./FocusWindowSelector";
 
 import { SummaryGrid } from "./SummaryGrid";
 
@@ -160,12 +159,6 @@ export const Dashboard = () => {
           dataset. Adjust the division, offense mix, or time horizon to generate a meeting-ready brief in seconds.
         </p>
       </header>
-
-      <FocusWindowSelector
-        value={filters.focusRange}
-        onChange={handleFocusChange}
-        isBusy={isLoading && !data}
-      />
 
       <SummaryGrid
         metrics={data?.windows ?? []}

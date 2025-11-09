@@ -313,6 +313,8 @@ const SummaryCard = ({
   actions,
   icon,
   windowNote,
+  isCollapsed,
+  onToggleCollapse,
 }: {
   metric: CompstatMetric;
   highlighted: boolean;
@@ -320,6 +322,8 @@ const SummaryCard = ({
   actions: SummaryCardAction[];
   icon?: ReactNode;
   windowNote?: string;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }) => {
   const delta = metric.changePct;
   const positive = delta >= 0;
@@ -342,16 +346,31 @@ const SummaryCard = ({
       )}
     >
       <div className="text-sm text-white/70">
-        <div className="flex items-center gap-3">
-          {icon ? (
-            <span
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-emerald-200 shadow-inner shadow-emerald-500/20"
-              aria-hidden="true"
-            >
-              {icon}
-            </span>
-          ) : null}
-          <p className="font-medium">{metric.label}</p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {icon ? (
+              <span
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-emerald-200 shadow-inner shadow-emerald-500/20"
+                aria-hidden="true"
+              >
+                {icon}
+              </span>
+            ) : null}
+            <p className="font-medium">{metric.label}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className={clsx(
+              "rounded-full border px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.2em] transition",
+              isCollapsed
+                ? "border-emerald-400/50 text-emerald-200 hover:border-emerald-300 hover:text-emerald-100"
+                : "border-white/20 text-white/70 hover:border-white/40 hover:text-white",
+            )}
+            aria-expanded={!isCollapsed}
+          >
+            {isCollapsed ? "Expand" : "Collapse"}
+          </button>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
           <span
@@ -375,7 +394,13 @@ const SummaryCard = ({
           <p className="mt-1 text-xs text-white/60">{windowNote}</p>
         ) : null}
         {hasActions ? (
-          <div className="mt-3 flex flex-col gap-3">
+          <div
+            className={clsx(
+              "mt-3 flex flex-col gap-3 overflow-hidden transition-all duration-300",
+              isCollapsed ? "max-h-0 opacity-0" : "max-h-[520px] opacity-100",
+            )}
+            aria-hidden={isCollapsed}
+          >
             {actions.length ? (
               <div className="grid grid-cols-2 gap-2">
                 {actions.map((action) => (
@@ -457,6 +482,14 @@ export const SummaryGrid = ({
     metricId: CompstatWindowId;
     label: string;
   } | null>(null);
+  const [collapsedCards, setCollapsedCards] = useState<
+    Record<CompstatWindowId, boolean>
+  >({
+    "7d": false,
+    "28d": false,
+    ytd: false,
+    "365d": false,
+  });
 
   const requestInsight = (
     type: InsightType,
@@ -642,6 +675,13 @@ const buildInsightActions = (
         onOpenZScore={(entry) => setZDetailsMetric(entry)}
         icon={RANGE_ICONS[metric.id]}
         windowNote={windowNote}
+        isCollapsed={collapsedCards[metric.id]}
+        onToggleCollapse={() =>
+          setCollapsedCards((prev) => ({
+            ...prev,
+            [metric.id]: !prev[metric.id],
+          }))
+        }
       />
     );
   };
@@ -660,6 +700,17 @@ const buildInsightActions = (
   }
 
   const hasMapSlot = Boolean(mapSlot);
+  const allCollapsed = ORDERED_WINDOWS.every(
+    (id) => collapsedCards[id],
+  );
+  const toggleAllCollapsed = (next: boolean) => {
+    setCollapsedCards({
+      "7d": next,
+      "28d": next,
+      ytd: next,
+      "365d": next,
+    });
+  };
   const mapTemporarilyHidden = Boolean(activeInsight);
   const renderMapSlot = () => {
     if (!hasMapSlot) {
@@ -708,6 +759,19 @@ const buildInsightActions = (
 
   return (
     <>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-white/70">
+          Collapse or expand the insight controls for faster scanning.
+        </p>
+        <button
+          type="button"
+          onClick={() => toggleAllCollapsed(!allCollapsed)}
+          className="rounded-full border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/70 transition hover:border-emerald-300 hover:text-white"
+          aria-pressed={allCollapsed}
+        >
+          {allCollapsed ? "Expand All Insights" : "Collapse All Insights"}
+        </button>
+      </div>
       {gridContent}
       {validActiveWindow && drilldownRows?.length ? (
         <OffenseDrilldownModal
