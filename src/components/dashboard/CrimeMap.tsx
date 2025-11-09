@@ -28,6 +28,10 @@ interface CrimeMapProps {
 }
 
 const DEFAULT_CENTER: LatLngExpression = [32.7767, -96.797];
+const DALLAS_BOUNDS: [[number, number], [number, number]] = [
+  [32.54, -97.2],
+  [33.12, -96.3],
+];
 const WINDOW_SHORT_LABELS: Record<CompstatWindowId, string> = {
   "7d": "7D",
   "28d": "28D",
@@ -56,6 +60,48 @@ const computeBounds = (
   return [southWest, northEast];
 };
 
+type BoundsTuple = [[number, number], [number, number]];
+
+const toTuple = (value: LatLngBoundsExpression): BoundsTuple => {
+  if (Array.isArray(value)) {
+    return value as BoundsTuple;
+  }
+  if (typeof (value as { getSouthWest?: () => { lat: number; lng: number } })
+    .getSouthWest === "function") {
+    const bounds = value as {
+      getSouthWest: () => { lat: number; lng: number };
+      getNorthEast: () => { lat: number; lng: number };
+    };
+    const sw = bounds.getSouthWest();
+    const ne = bounds.getNorthEast();
+    return [
+      [sw.lat, sw.lng],
+      [ne.lat, ne.lng],
+    ];
+  }
+  return DALLAS_BOUNDS;
+};
+
+const ensureDallasBounds = (
+  candidate?: LatLngBoundsExpression,
+): LatLngBoundsExpression => {
+  if (!candidate) {
+    return DALLAS_BOUNDS;
+  }
+  const [
+    [south, west],
+    [north, east],
+  ] = toTuple(candidate);
+  const [
+    [dSouth, dWest],
+    [dNorth, dEast],
+  ] = DALLAS_BOUNDS;
+  return [
+    [Math.min(south, dSouth), Math.min(west, dWest)],
+    [Math.max(north, dNorth), Math.max(east, dEast)],
+  ];
+};
+
 export const CrimeMap = ({
   incidents,
   isExpanded = false,
@@ -71,7 +117,7 @@ export const CrimeMap = ({
   const heatLayerRef = useRef<Layer | null>(null);
   const [heatEnabled, setHeatEnabled] = useState(true);
   const bounds = useMemo(
-    () => computeBounds(incidents),
+    () => ensureDallasBounds(computeBounds(incidents)),
     [incidents],
   );
 
@@ -171,10 +217,30 @@ export const CrimeMap = ({
     let cancelled = false;
 
     (async () => {
-      const L = await import("leaflet");
+      const leafletModule = await import("leaflet");
+      const Leaflet =
+        (leafletModule as { default?: typeof import("leaflet") }).default ??
+        leafletModule;
       // Dynamically load the plugin so SSR and bundling stay clean
       // @ts-expect-error - Third-party plugin ships without TypeScript types
       await import("leaflet.heat");
+      const heatFactory: ((
+        latlngs: [number, number, number][],
+        options?: Record<string, unknown>,
+      ) => Layer) | null =
+        typeof (Leaflet as { heatLayer?: unknown }).heatLayer === "function"
+          ? ((Leaflet as { heatLayer: typeof Leaflet.heatLayer }).heatLayer as (
+              latlngs: [number, number, number][],
+              options?: Record<string, unknown>,
+            ) => Layer)
+          : null;
+
+      if (!heatFactory) {
+        console.warn(
+          "leaflet.heat failed to attach to the Leaflet instance; heatmap disabled",
+        );
+        return;
+      }
 
       // Ensure a dedicated pane exists so the heat sits below vector markers
       if (!map.getPane("heat")) {
@@ -182,12 +248,12 @@ export const CrimeMap = ({
         pane.style.zIndex = "350"; // below overlayPane (400) and markerPane (600)
       }
 
-      const nextLayer = (L as any).heatLayer(heatPoints, {
+      const nextLayer = heatFactory(heatPoints, {
         pane: "heat",
-        radius: 25,
-        blur: 15,
+        radius: 30,
+        blur: 25,
         maxZoom: 17,
-        minOpacity: 0.25,
+        minOpacity: 0.35,
         gradient: {
           0.2: "#4ade80",
           0.4: "#22c55e",
@@ -204,6 +270,8 @@ export const CrimeMap = ({
           } catch {}
         }
         heatLayerRef.current = nextLayer.addTo(map);
+      } else {
+        nextLayer.remove();
       }
     })();
 
