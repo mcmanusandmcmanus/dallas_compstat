@@ -12,8 +12,9 @@ import type {
   FitBoundsOptions,
   LatLngBoundsExpression,
   LatLngExpression,
+  Layer,
 } from "leaflet";
-import type { IncidentFeature } from "@/lib/types";
+import type { CompstatWindowId, IncidentFeature } from "@/lib/types";
 import "leaflet/dist/leaflet.css";
 import clsx from "clsx";
 
@@ -22,9 +23,18 @@ interface CrimeMapProps {
   isExpanded?: boolean;
   onToggleExpand?: () => void;
   className?: string;
+  focusRange?: CompstatWindowId;
+  onFocusRangeChange?: (range: CompstatWindowId) => void;
 }
 
 const DEFAULT_CENTER: LatLngExpression = [32.7767, -96.797];
+const WINDOW_SHORT_LABELS: Record<CompstatWindowId, string> = {
+  "7d": "7D",
+  "28d": "28D",
+  ytd: "YTD",
+  "365d": "365D",
+};
+const WINDOW_ORDER: CompstatWindowId[] = ["7d", "28d", "ytd", "365d"];
 
 const computeBounds = (
   incidents: IncidentFeature[],
@@ -51,12 +61,15 @@ export const CrimeMap = ({
   isExpanded = false,
   onToggleExpand,
   className,
+  focusRange,
+  onFocusRangeChange,
 }: CrimeMapProps) => {
   const hasIncidents = incidents.length > 0;
   const hasCluster = incidents.length > 1;
   const mapRef = useRef<LeafletMap | null>(null);
   // Keep a reference to the heat layer so we can update/remove it
-  const heatLayerRef = useRef<any>(null);
+  const heatLayerRef = useRef<Layer | null>(null);
+  const [heatEnabled, setHeatEnabled] = useState(true);
   const bounds = useMemo(
     () => computeBounds(incidents),
     [incidents],
@@ -84,6 +97,24 @@ export const CrimeMap = ({
       map.invalidateSize();
     });
   }, []);
+  const heatPoints = useMemo<[number, number, number][]>(() => {
+    if (!incidents.length) {
+      return [];
+    }
+    const now = Date.now();
+    return incidents.map((incident) => {
+      const timestamp = Date.parse(incident.occurred ?? "");
+      const ageDays = Number.isFinite(timestamp)
+        ? Math.max((now - timestamp) / 86_400_000, 0)
+        : 0;
+      const decay = Math.max(0.35, 1 - ageDays / 365);
+      return [
+        incident.latitude,
+        incident.longitude,
+        Number(decay.toFixed(2)) || 1,
+      ];
+    });
+  }, [incidents]);
   const markerNodes = useMemo(
     () =>
       incidents.map((incident) => (
@@ -126,7 +157,16 @@ export const CrimeMap = ({
   // Add/update a heatmap layer using leaflet.heat (client-only plugin)
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map) {
+      return;
+    }
+    if (!heatEnabled || heatPoints.length === 0) {
+      if (heatLayerRef.current) {
+        heatLayerRef.current.remove();
+        heatLayerRef.current = null;
+      }
+      return;
+    }
 
     let cancelled = false;
 
@@ -141,14 +181,7 @@ export const CrimeMap = ({
         pane.style.zIndex = "350"; // below overlayPane (400) and markerPane (600)
       }
 
-      // Convert incidents to [lat, lng, weight]
-      const points: [number, number, number][] = incidents.map((i) => [
-        i.latitude,
-        i.longitude,
-        1,
-      ]);
-
-      const nextLayer = (L as any).heatLayer(points, {
+      const nextLayer = (L as any).heatLayer(heatPoints, {
         pane: "heat",
         radius: 25,
         blur: 15,
@@ -164,7 +197,6 @@ export const CrimeMap = ({
       });
 
       if (!cancelled) {
-        // Replace any existing layer
         if (heatLayerRef.current) {
           try {
             heatLayerRef.current.remove();
@@ -183,7 +215,16 @@ export const CrimeMap = ({
         heatLayerRef.current = null;
       }
     };
-  }, [incidents]);
+  }, [heatPoints, heatEnabled]);
+
+  const handleRangeSelect = (id: CompstatWindowId) => {
+    if (!onFocusRangeChange || id === focusRange) {
+      return;
+    }
+    onFocusRangeChange(id);
+  };
+
+  const heatToggleLabel = heatEnabled ? "Heatmap on" : "Heatmap off";
 
   return (
     <div
@@ -192,7 +233,7 @@ export const CrimeMap = ({
         className,
       )}
     >
-      <header className="flex flex-wrap items-center justify-between gap-2">
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-sm font-semibold text-white/80">
             Hot spot map
@@ -204,15 +245,50 @@ export const CrimeMap = ({
             Geocoded incidents in the selected window
           </p>
         </div>
-        {onToggleExpand ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {onFocusRangeChange ? (
+            <div className="flex flex-wrap items-center gap-1 rounded-full border border-white/15 bg-white/5 p-1">
+              {WINDOW_ORDER.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => handleRangeSelect(option)}
+                  aria-pressed={focusRange === option}
+                  className={clsx(
+                    "rounded-full px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.25em] transition",
+                    focusRange === option
+                      ? "bg-emerald-300 text-slate-900"
+                      : "text-white/70 hover:text-white",
+                  )}
+                >
+                  {WINDOW_SHORT_LABELS[option]}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <button
             type="button"
-            onClick={onToggleExpand}
-            className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80 transition hover:border-emerald-300 hover:text-white"
+            onClick={() => setHeatEnabled((prev) => !prev)}
+            className={clsx(
+              "rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide transition",
+              heatEnabled
+                ? "border-emerald-300/70 text-emerald-100 hover:bg-emerald-500/10"
+                : "border-white/20 text-white/70 hover:border-white/40 hover:text-white",
+            )}
+            title="Toggle the KDE heatmap layer"
           >
-            {isExpanded ? "Collapse map" : "Expand map"}
+            {heatToggleLabel}
           </button>
-        ) : null}
+          {onToggleExpand ? (
+            <button
+              type="button"
+              onClick={onToggleExpand}
+              className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80 transition hover:border-emerald-300 hover:text-white"
+            >
+              {isExpanded ? "Collapse map" : "Expand map"}
+            </button>
+          ) : null}
+        </div>
       </header>
       <div
         className={`relative mt-4 ${mapHeight} w-full overflow-hidden rounded-xl border border-white/5`}

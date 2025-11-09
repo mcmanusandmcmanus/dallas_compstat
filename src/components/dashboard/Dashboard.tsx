@@ -207,6 +207,8 @@ export const Dashboard = () => {
             incidents={data?.incidents ?? []}
             isExpanded={mapExpanded}
             onToggleExpand={() => setMapExpanded((prev) => !prev)}
+            focusRange={filters.focusRange}
+            onFocusRangeChange={handleFocusChange}
             className="h-full"
           />
         }

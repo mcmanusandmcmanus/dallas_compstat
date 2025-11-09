@@ -164,7 +164,11 @@ describe('buildCompstatResponse', () => {
     const drilldown = result.drilldown?.['7d'];
     expect(drilldown).toBeDefined();
     expect(drilldown?.[0].crimeAgainst).toBe('Person');
-    expect(mockFetchOffenseDetails).toHaveBeenCalledTimes(3);
+    const expectedCallsPerWindow = 3;
+    const totalWindows = 4; // 7d, 28d, YTD, 365d
+    expect(mockFetchOffenseDetails).toHaveBeenCalledTimes(
+      expectedCallsPerWindow * totalWindows,
+    );
   });
 });
 
