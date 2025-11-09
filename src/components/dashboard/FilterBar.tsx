@@ -1,22 +1,8 @@
 "use client";
 
 import clsx from "clsx";
-import type { CompstatWindowId } from "@/lib/types";
-
-const focusOptions: Array<{
-  id: CompstatWindowId;
-  label: string;
-  hint: string;
-}> = [
-  { id: "7d", label: "Last 7 days", hint: "week vs prior week" },
-  { id: "28d", label: "Last 28 days", hint: "monthly cadence" },
-  { id: "ytd", label: "Year to date", hint: "progress vs last year" },
-  { id: "365d", label: "Last 365 days", hint: "rolling 12 months" },
-];
 
 interface FilterBarProps {
-  focusRange: CompstatWindowId;
-  onFocusRangeChange: (value: CompstatWindowId) => void;
   division: string;
   offenseCategory: string;
   onDivisionChange: (value: string) => void;
@@ -28,8 +14,6 @@ interface FilterBarProps {
 }
 
 export const FilterBar = ({
-  focusRange,
-  onFocusRangeChange,
   division,
   offenseCategory,
   onDivisionChange,
@@ -44,32 +28,12 @@ export const FilterBar = ({
       <div className="flex flex-col gap-6">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-white/60">
-            Focus window
+            Additional filters
           </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {focusOptions.map((option) => {
-              const active = option.id === focusRange;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  disabled={active && isBusy}
-                  onClick={() => onFocusRangeChange(option.id)}
-                  className={clsx(
-                    "rounded-2xl border px-4 py-3 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300",
-                    active
-                      ? "border-emerald-300 bg-white text-slate-900 shadow-lg"
-                      : "border-white/15 bg-white/0 text-white/80 hover:border-white/40 hover:bg-white/5",
-                  )}
-                >
-                  <p className="text-base font-semibold">{option.label}</p>
-                  <p className="text-sm text-white/60">{option.hint}</p>
-                </button>
-              );
-            })}
-          </div>
+          <p className="text-sm text-white/60">
+            Slice by division or NIBRS category to update the entire brief.
+          </p>
         </div>
-
         <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto]">
           <label className="text-sm text-white/70">
             Division
@@ -106,7 +70,9 @@ export const FilterBar = ({
           <button
             type="button"
             onClick={onReset}
-            className="rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold text-white/80 transition hover:border-emerald-200 hover:text-white hover:shadow-lg hover:shadow-emerald-500/20"
+            className={clsx(
+              "rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold text-white/80 transition hover:border-emerald-200 hover:text-white hover:shadow-lg hover:shadow-emerald-500/20",
+            )}
           >
             Reset filters
           </button>
@@ -115,3 +81,4 @@ export const FilterBar = ({
     </section>
   );
 };
+

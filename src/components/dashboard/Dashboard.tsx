@@ -11,6 +11,7 @@ import dynamic from "next/dynamic";
 import type { CompstatResponse, CompstatWindowId } from "@/lib/types";
 
 import { FilterBar } from "./FilterBar";
+import { FocusWindowSelector } from "./FocusWindowSelector";
 
 import { SummaryGrid } from "./SummaryGrid";
 
@@ -160,6 +161,12 @@ export const Dashboard = () => {
         </p>
       </header>
 
+      <FocusWindowSelector
+        value={filters.focusRange}
+        onChange={handleFocusChange}
+        isBusy={isLoading && !data}
+      />
+
       <SummaryGrid
         metrics={data?.windows ?? []}
         isLoading={isLoading && !data}
@@ -196,8 +203,6 @@ export const Dashboard = () => {
       />
 
       <FilterBar
-        focusRange={filters.focusRange}
-        onFocusRangeChange={handleFocusChange}
         division={filters.division}
         offenseCategory={filters.offenseCategory}
         onDivisionChange={handleDivisionChange}
