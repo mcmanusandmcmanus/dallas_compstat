@@ -26,7 +26,7 @@ const CrimeMap = dynamic(
 );
 
 const formatSubtitle = (label?: string) =>
-  label ? `${label} • Current focus window` : "Current focus window";
+  label ? `${label} | Current focus window` : "Current focus window";
 
 interface ModalShellProps {
   title: string;

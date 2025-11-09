@@ -71,6 +71,56 @@ const RANGE_ICONS: Partial<Record<CompstatWindowId, ReactNode>> = {
       <path d="M10 13h4" />
     </svg>
   ),
+  "28d": (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-5 w-5"
+      aria-hidden="true"
+    >
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <path d="M4 10h16" />
+      <path d="M4 15h16" />
+      <path d="M10 4v16" />
+      <path d="M15 4v16" />
+    </svg>
+  ),
+  ytd: (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-5 w-5"
+      aria-hidden="true"
+    >
+      <path d="M4 18h16" />
+      <path d="M8 18V7l4 3 3-5 3 6" />
+      <path d="M4 6h4" />
+    </svg>
+  ),
+  "365d": (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-5 w-5"
+      aria-hidden="true"
+    >
+      <path d="M12 4a8 8 0 1 1-7.5 5" />
+      <path d="M12 8v4l3 2" />
+      <path d="M5 4h4v4" />
+    </svg>
+  ),
 };
 
 type InsightType =
@@ -80,8 +130,7 @@ type InsightType =
   | "hourly"
   | "breakdown"
   | "incidentSummary"
-  | "incidentTable"
-  | "drilldown";
+  | "incidentTable";
 
 interface SummaryCardAction {
   id: InsightType;
@@ -226,24 +275,6 @@ const INSIGHT_ICONS: Record<InsightType, ReactNode> = {
       <path d="M10 5v14" />
     </svg>
   ),
-  drilldown: (
-    <svg
-      viewBox="0 0 24 24"
-      width="16"
-      height="16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M4 6h4v8H4z" />
-      <path d="M10 10h4v10h-4z" />
-      <path d="M16 4h4v12h-4z" />
-      <path d="M12 18l2 2 2-2" />
-    </svg>
-  ),
 };
 
 const SummaryCard = ({
@@ -332,24 +363,20 @@ const SummaryCard = ({
                 ))}
               </div>
             ) : null}
-            <button
-              type="button"
-              onClick={onOpenDrilldown}
-              disabled={!onOpenDrilldown}
-              className={clsx(
-                "rounded-xl border p-3 text-left text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300",
-                onOpenDrilldown
-                  ? "border-sky-400/30 bg-slate-900/30 hover:border-sky-300 hover:bg-slate-900/50"
-                  : "cursor-not-allowed border-white/10 bg-slate-900/20 text-white/50",
-              )}
-            >
-              <p className="text-sm font-semibold">
-                View offense drilldown
-              </p>
-              <p className="text-xs text-white/70">
-                Validation Table {metric.label} drilldown
-              </p>
-            </button>
+            {onOpenDrilldown ? (
+              <button
+                type="button"
+                onClick={onOpenDrilldown}
+                className="rounded-xl border border-sky-400/30 bg-slate-900/30 p-3 text-left text-white transition hover:border-sky-300 hover:bg-slate-900/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+              >
+                <p className="text-sm font-semibold">
+                  View Validation Table drilldown
+                </p>
+                <p className="text-xs text-white/70">
+                  Detailed offense mix for {metric.label}
+                </p>
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -488,20 +515,15 @@ export const SummaryGrid = ({
       (incidentCategories?.length ?? 0) > 0 ||
       (incidentDivisions?.length ?? 0) > 0,
     incidentTable: incidents.length > 0,
-    drilldown: true,
   };
   const defaultInsightLabel =
     metrics.find((entry) => entry.id === focusRange)?.label ??
     "Current focus window";
   const activeInsightLabel = insightMetricLabel ?? defaultInsightLabel;
 
-const buildInsightActions = (
-  metric: CompstatMetric,
-  extras?: { onOpenDrilldown?: () => void },
-): SummaryCardAction[] => {
+const buildInsightActions = (metric: CompstatMetric): SummaryCardAction[] => {
   const isSwitchingFocus =
     pendingInsight?.metricId === metric.id;
-  const hasDrilldownAction = Boolean(extras?.onOpenDrilldown);
   return [
       {
         id: "map",
@@ -564,16 +586,6 @@ const buildInsightActions = (
         disabled:
           isSwitchingFocus || !insightAvailability.incidentTable,
       },
-      {
-        id: "drilldown",
-        label: `View offense drilldown — Validation Table ${metric.label} drilldown`,
-        icon: INSIGHT_ICONS.drilldown,
-        onClick: extras?.onOpenDrilldown,
-        disabled: isSwitchingFocus || !hasDrilldownAction,
-        tooltip: hasDrilldownAction
-          ? `Validation Table ${metric.label} drilldown`
-          : "Drilldown unavailable for this window.",
-      },
   ];
 };
 
@@ -589,9 +601,7 @@ const buildInsightActions = (
         metric={metric}
         highlighted={isFocusMetric}
         onOpenDrilldown={openDrilldownHandler}
-        actions={buildInsightActions(metric, {
-          onOpenDrilldown: openDrilldownHandler,
-        })}
+        actions={buildInsightActions(metric)}
         onOpenZScore={(entry) => setZDetailsMetric(entry)}
         icon={RANGE_ICONS[metric.id]}
       />

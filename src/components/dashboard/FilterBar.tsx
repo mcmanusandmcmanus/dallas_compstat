@@ -8,10 +8,10 @@ const focusOptions: Array<{
   label: string;
   hint: string;
 }> = [
-  { id: "7d", label: "7 day pulse", hint: "week vs prior week" },
-  { id: "28d", label: "28 day view", hint: "monthly cadence" },
+  { id: "7d", label: "Last 7 days", hint: "week vs prior week" },
+  { id: "28d", label: "Last 28 days", hint: "monthly cadence" },
   { id: "ytd", label: "Year to date", hint: "progress vs last year" },
-  { id: "365d", label: "Rolling 12 months", hint: "long-term trend" },
+  { id: "365d", label: "Last 365 days", hint: "rolling 12 months" },
 ];
 
 interface FilterBarProps {

@@ -13,8 +13,8 @@ const formatNumber = (value: number) => value.toLocaleString();
 
 const formatChange = (value: number, changePct: number) => {
   const pct = Number.isFinite(changePct) ? changePct : 0;
-  const signedValue = value >= 0 ? "+" : "−";
-  const signedPct = pct >= 0 ? "+" : "−";
+  const signedValue = value >= 0 ? "+" : "-";
+  const signedPct = pct >= 0 ? "+" : "-";
   return `${signedValue}${Math.abs(value).toLocaleString()} (${signedPct}${Math.abs(pct).toFixed(1)}%)`;
 };
 
@@ -82,8 +82,8 @@ export const OffenseDrilldownModal = ({
                 <th className="py-3 pr-3 text-right font-semibold">Current</th>
                 <th className="py-3 pr-3 text-right font-semibold">Previous</th>
                 <th className="py-3 pr-3 text-right font-semibold">Year Ago</th>
-                <th className="py-3 pr-3 text-right font-semibold">Δ vs Prev</th>
-                <th className="py-3 pr-3 text-right font-semibold">Δ vs Year</th>
+                <th className="py-3 pr-3 text-right font-semibold">Delta vs Prev</th>
+                <th className="py-3 pr-3 text-right font-semibold">Delta vs Year</th>
                 <th className="py-3 text-right font-semibold">Poisson Z</th>
               </tr>
             </thead>
