@@ -8,6 +8,7 @@ import {
   TileLayer,
 } from "react-leaflet";
 import type {
+  FitBoundsOptions,
   LatLngBoundsExpression,
   LatLngExpression,
 } from "leaflet";
@@ -50,6 +51,8 @@ export const CrimeMap = ({
   onToggleExpand,
   className,
 }: CrimeMapProps) => {
+  const hasIncidents = incidents.length > 0;
+  const hasCluster = incidents.length > 1;
   const bounds = useMemo(
     () => computeBounds(incidents),
     [incidents],
@@ -60,9 +63,41 @@ export const CrimeMap = ({
       ? DEFAULT_CENTER
       : [incidents[0].latitude, incidents[0].longitude];
 
+  const boundsOptions: FitBoundsOptions | undefined = hasCluster
+    ? { padding: [48, 48] }
+    : undefined;
+
   const mapHeight = isExpanded
     ? "h-[520px] lg:h-[640px]"
     : "h-[360px] lg:h-[480px]";
+  const markerNodes = useMemo(
+    () =>
+      incidents.map((incident) => (
+        <CircleMarker
+          key={incident.id}
+          center={[incident.latitude, incident.longitude]}
+          radius={6}
+          pathOptions={{
+            color: "#34d399",
+            opacity: 0.9,
+            weight: 1,
+            fillOpacity: 0.6,
+          }}
+        >
+          <Popup>
+            <p className="font-semibold">{incident.offense}</p>
+            <p className="text-xs">
+              {incident.division} / Beat {incident.beat}
+            </p>
+            <p className="mt-1 text-xs">
+              {new Date(incident.occurred).toLocaleString()}
+            </p>
+            <p className="mt-1 text-xs">Status: {incident.status}</p>
+          </Popup>
+        </CircleMarker>
+      )),
+    [incidents],
+  );
 
   return (
     <div
@@ -94,47 +129,35 @@ export const CrimeMap = ({
         ) : null}
       </header>
       <div
-        className={`mt-4 ${mapHeight} w-full overflow-hidden rounded-xl border border-white/5`}
+        className={`relative mt-4 ${mapHeight} w-full overflow-hidden rounded-xl border border-white/5`}
       >
+        {!hasIncidents ? (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-slate-950/65 text-center text-sm text-white/70">
+            <p className="font-semibold text-white">
+              No mapped incidents for this window
+            </p>
+            <p>Adjust filters or try another range to populate the map.</p>
+          </div>
+        ) : null}
         <MapContainer
+          aria-label="Hot spot map for the selected CompStat window"
           center={center}
           bounds={bounds}
+          boundsOptions={boundsOptions}
           zoom={11}
+          minZoom={10}
+          maxZoom={17}
           scrollWheelZoom={false}
-          className="h-full w-full text-black"
+          className={clsx(
+            "h-full w-full text-black transition duration-300",
+            !hasIncidents && "blur-sm opacity-30",
+          )}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          {incidents.map((incident) => (
-            <CircleMarker
-              key={incident.id}
-              center={[incident.latitude, incident.longitude]}
-              radius={6}
-              pathOptions={{
-                color: "#34d399",
-                opacity: 0.9,
-                weight: 1,
-                fillOpacity: 0.6,
-              }}
-            >
-              <Popup>
-                <p className="font-semibold">
-                  {incident.offense}
-                </p>
-                <p className="text-xs">
-                  {incident.division} / Beat {incident.beat}
-                </p>
-                <p className="mt-1 text-xs">
-                  {new Date(incident.occurred).toLocaleString()}
-                </p>
-                <p className="mt-1 text-xs">
-                  Status: {incident.status}
-                </p>
-              </Popup>
-            </CircleMarker>
-          ))}
+          {markerNodes}
         </MapContainer>
       </div>
     </div>
