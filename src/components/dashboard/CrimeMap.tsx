@@ -173,6 +173,7 @@ export const CrimeMap = ({
     (async () => {
       const L = await import("leaflet");
       // Dynamically load the plugin so SSR and bundling stay clean
+      // @ts-expect-error - Third-party plugin ships without TypeScript types
       await import("leaflet.heat");
 
       // Ensure a dedicated pane exists so the heat sits below vector markers
