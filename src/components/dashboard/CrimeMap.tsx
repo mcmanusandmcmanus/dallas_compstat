@@ -221,6 +221,9 @@ export const CrimeMap = ({
       const Leaflet =
         (leafletModule as { default?: typeof import("leaflet") }).default ??
         leafletModule;
+      if (typeof window !== "undefined" && !(window as { L?: unknown }).L) {
+        (window as { L?: unknown }).L = Leaflet;
+      }
       // Dynamically load the plugin so SSR and bundling stay clean
       // @ts-expect-error - Third-party plugin ships without TypeScript types
       await import("leaflet.heat");
