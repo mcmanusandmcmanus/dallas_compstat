@@ -226,26 +226,29 @@ export const Dashboard = () => {
           </button>
         </div>
         <div className="flex flex-col gap-3 rounded-2xl border border-white/15 bg-white/5 px-4 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
-          <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
-            CompStat Command Brief
-          </h1>
-          <nav
-            className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.3em] text-white/70"
-            aria-label="CompStat sections"
-          >
-            {HERO_LINKS.map((link, index) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="group inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-2 transition hover:border-emerald-400/50 hover:text-white"
-              >
-                <span className="rounded-full bg-white/10 px-2 py-1 font-mono text-[0.55rem] tracking-widest text-white/60 group-hover:text-emerald-200">
-                  {(index + 1).toString().padStart(2, "0")}
-                </span>
-                <span className="text-[0.6rem]">{link.label}</span>
-              </a>
-            ))}
-          </nav>
+          <div className="flex flex-wrap items-center gap-4">
+            <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
+              CompStat Command Brief
+            </h1>
+            <div className="hidden h-6 w-px bg-white/20 md:block" />
+            <nav
+              className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.3em] text-white/70"
+              aria-label="CompStat sections"
+            >
+              {HERO_LINKS.map((link, index) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="group inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-3 py-2 transition hover:border-emerald-400/50 hover:text-white"
+                >
+                  <span className="rounded-full bg-white/10 px-2 py-1 font-mono text-[0.55rem] tracking-widest text-white/60 group-hover:text-emerald-200">
+                    {(index + 1).toString().padStart(2, "0")}
+                  </span>
+                  <span className="text-[0.6rem]">{link.label}</span>
+                </a>
+              ))}
+            </nav>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
