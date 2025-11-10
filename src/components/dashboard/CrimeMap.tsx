@@ -140,6 +140,7 @@ export const CrimeMap = ({
   // Keep a reference to the heat layer so we can update/remove it
   const heatLayerRef = useRef<Layer | null>(null);
   const [heatEnabled, setHeatEnabled] = useState(true);
+  const [pointsEnabled, setPointsEnabled] = useState(true);
   const bounds = useMemo(
     () => ensureDallasBounds(computeBounds(incidents)),
     [incidents],
@@ -385,25 +386,27 @@ export const CrimeMap = ({
         }),
       );
     }
-    layers.push(
-      new ScatterplotLayer<DeckPoint>({
-        id: "deckgl-crime-points",
-        data: deckPoints,
-        getPosition: (d) => d.position,
-        getRadius: isExpanded ? 70 : 55,
-        radiusUnits: "meters",
-        stroked: true,
-        lineWidthMinPixels: 1,
-        getLineColor: [52, 211, 153, 220],
-        getFillColor: heatEnabled
-          ? [52, 211, 153, 90]
-          : [52, 211, 153, 160],
-        pickable: true,
-        autoHighlight: true,
-      }),
-    );
+    if (pointsEnabled) {
+      layers.push(
+        new ScatterplotLayer<DeckPoint>({
+          id: "deckgl-crime-points",
+          data: deckPoints,
+          getPosition: (d) => d.position,
+          getRadius: isExpanded ? 70 : 55,
+          radiusUnits: "meters",
+          stroked: true,
+          lineWidthMinPixels: 1,
+          getLineColor: [52, 211, 153, 220],
+          getFillColor: heatEnabled
+            ? [52, 211, 153, 90]
+            : [52, 211, 153, 160],
+          pickable: true,
+          autoHighlight: true,
+        }),
+      );
+    }
     return layers;
-  }, [deckPoints, heatEnabled, isExpanded]);
+  }, [deckPoints, heatEnabled, isExpanded, pointsEnabled]);
 
   const gpuTooltip = useCallback(
     ({ object }: { object?: DeckPoint | null }) => {
@@ -431,6 +434,7 @@ export const CrimeMap = ({
   const heatToggleLabel = heatEnabled ? "Heatmap on" : "Heatmap off";
   const gpuToggleLabel =
     mapEngine === "deckgl" ? "Use classic heatmap" : "Use GPU heatmap";
+  const pointsToggleLabel = pointsEnabled ? "Points on" : "Points off";
 
   const renderLeafletMap = () => (
     <MapContainer
@@ -447,12 +451,12 @@ export const CrimeMap = ({
         !hasIncidents && "blur-sm opacity-30",
       )}
       ref={attachMapRef}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {markerNodes}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {pointsEnabled ? markerNodes : null}
     </MapContainer>
   );
 
@@ -538,6 +542,20 @@ export const CrimeMap = ({
           >
             {heatToggleLabel}
           </button>
+          <button
+            type="button"
+            onClick={() => setPointsEnabled((prev) => !prev)}
+            aria-pressed={pointsEnabled}
+            className={clsx(
+              "rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide transition",
+              pointsEnabled
+                ? "border-emerald-300/70 text-emerald-100 hover:bg-emerald-500/10"
+                : "border-white/20 text-white/70 hover:border-white/40 hover:text-white",
+            )}
+            title="Toggle the incident point markers"
+          >
+            {pointsToggleLabel}
+          </button>
           {GPU_HEATMAP_ENABLED ? (
             <button
               type="button"
@@ -594,6 +612,14 @@ export const CrimeMap = ({
               <span>Lower</span>
               <span>Higher</span>
             </div>
+          </div>
+        ) : null}
+        {!pointsEnabled ? (
+          <div
+            className="pointer-events-none absolute top-3 right-3 rounded-full border border-white/15 bg-black/60 px-3 py-1 text-[0.6rem] uppercase tracking-[0.3em] text-white/70 shadow-lg shadow-black/40"
+            aria-hidden="true"
+          >
+            Incident points hidden
           </div>
         ) : null}
         {usingGpuHeat ? (
