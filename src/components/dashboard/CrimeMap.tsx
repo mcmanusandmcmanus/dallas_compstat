@@ -50,6 +50,8 @@ const GPU_HEATMAP_ENABLED =
 const GPU_HEATMAP_STYLE_URL =
   process.env.NEXT_PUBLIC_GPU_HEATMAP_STYLE ??
   "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
+const MAP_ATTRIBUTION =
+  "© OpenStreetMap contributors · © CARTO · Incident data: Dallas PD";
 
 const computeIncidentWeight = (incident: IncidentFeature) => {
   const now = Date.now();
@@ -525,6 +527,7 @@ export const CrimeMap = ({
           <button
             type="button"
             onClick={() => setHeatEnabled((prev) => !prev)}
+            aria-pressed={heatEnabled}
             className={clsx(
               "rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide transition",
               heatEnabled
@@ -543,6 +546,7 @@ export const CrimeMap = ({
                   prev === "leaflet" ? "deckgl" : "leaflet",
                 )
               }
+              aria-pressed={mapEngine === "deckgl"}
               className={clsx(
                 "rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide transition",
                 mapEngine === "deckgl"
@@ -577,6 +581,29 @@ export const CrimeMap = ({
           </div>
         ) : null}
         {usingGpuHeat ? renderDeckMap() : renderLeafletMap()}
+        {heatEnabled && hasIncidents ? (
+          <div
+            className="pointer-events-none absolute bottom-3 left-3 hidden flex-col rounded-2xl bg-black/40 px-3 py-2 text-[0.65rem] text-white/80 shadow-lg shadow-black/40 md:flex"
+            aria-hidden="true"
+          >
+            <span className="font-semibold tracking-[0.3em] text-white/70">
+              HEAT INTENSITY
+            </span>
+            <div className="mt-2 h-1 w-36 rounded-full bg-gradient-to-r from-emerald-200 via-emerald-400 to-emerald-700" />
+            <div className="mt-1 flex justify-between text-[0.55rem] uppercase tracking-[0.3em] text-white/60">
+              <span>Lower</span>
+              <span>Higher</span>
+            </div>
+          </div>
+        ) : null}
+        {usingGpuHeat ? (
+          <div
+            className="pointer-events-none absolute bottom-3 right-3 rounded-full border border-white/15 bg-black/55 px-3 py-1 text-[0.58rem] uppercase tracking-[0.25em] text-white/60 shadow-lg shadow-black/40"
+            aria-hidden="true"
+          >
+            {MAP_ATTRIBUTION}
+          </div>
+        ) : null}
       </div>
     </div>
   );
