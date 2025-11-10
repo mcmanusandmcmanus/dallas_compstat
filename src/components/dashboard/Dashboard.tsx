@@ -68,6 +68,7 @@ export const Dashboard = () => {
   const [mapExpanded, setMapExpanded] = useState(false);
   const [showReference, setShowReference] = useState(false);
   const [showValidationTable, setShowValidationTable] = useState(false);
+  const [mapPanelOpen, setMapPanelOpen] = useState(false);
   const focusWaiters = useRef<Map<CompstatWindowId, Set<() => void>>>(
     new Map(),
   );
@@ -292,22 +293,49 @@ export const Dashboard = () => {
         }
         onSelectOffenseCategory={handleCategoryDrilldown}
         onFocusRangeChange={handleFocusChange}
-        mapSlot={
-          <CrimeMap
-            incidents={data?.incidents ?? []}
-            isExpanded={mapExpanded}
-            onToggleExpand={() => setMapExpanded((prev) => !prev)}
-            focusRange={filters.focusRange}
-            onFocusRangeChange={handleFocusChange}
-            className="h-full"
-          />
-        }
       />
 
       <TrendCard
         data={data?.trend ?? []}
         isLoading={isLoading && !data}
       />
+
+      <section className="rounded-2xl border border-white/10 bg-slate-900/40 p-5 text-white shadow-lg shadow-slate-900/30">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-white/80">
+              Hot spot map panel
+            </p>
+            <p className="text-xs text-white/60">
+              Collapse by default to prioritize the CompStat KPI cards.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setMapPanelOpen((prev) => !prev)}
+            className="rounded-full border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/80 transition hover:border-emerald-300 hover:text-white"
+          >
+            {mapPanelOpen ? "Hide map panel" : "Show map panel"}
+          </button>
+        </div>
+        {mapPanelOpen ? (
+          <div className="mt-4">
+            <CrimeMap
+              incidents={data?.incidents ?? []}
+              isExpanded={mapExpanded}
+              onToggleExpand={() => setMapExpanded((prev) => !prev)}
+              focusRange={filters.focusRange}
+              onFocusRangeChange={handleFocusChange}
+              className="h-full"
+            />
+          </div>
+        ) : (
+          <div className="mt-4 rounded-2xl border border-dashed border-white/15 bg-white/5 p-6 text-sm text-white/70">
+            Map hidden to keep the 7d / 28d / YTD / 365d cards in view. Use
+            “Show map panel” whenever spatial context is needed.
+          </div>
+        )}
+      </section>
 
       <FilterBar
         division={filters.division}

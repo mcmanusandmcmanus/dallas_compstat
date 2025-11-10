@@ -39,7 +39,6 @@ interface SummaryGridProps {
   selectedOffenseCategory?: string;
   onSelectOffenseCategory?: (label: string) => void;
   onFocusRangeChange?: (range: CompstatWindowId) => void | Promise<void>;
-  mapSlot?: ReactNode;
 }
 
 const badgeStyles: Record<CompstatMetric["classification"], string> = {
@@ -472,7 +471,6 @@ export const SummaryGrid = ({
   selectedOffenseCategory,
   onSelectOffenseCategory,
   onFocusRangeChange,
-  mapSlot,
 }: SummaryGridProps) => {
   const [activeWindow, setActiveWindow] =
     useState<CompstatWindowId | null>(null);
@@ -487,10 +485,10 @@ export const SummaryGrid = ({
   const [collapsedCards, setCollapsedCards] = useState<
     Record<CompstatWindowId, boolean>
   >({
-    "7d": false,
-    "28d": false,
-    ytd: false,
-    "365d": false,
+    "7d": true,
+    "28d": true,
+    ytd: true,
+    "365d": true,
   });
 
   const requestInsight = async (
@@ -527,8 +525,6 @@ export const SummaryGrid = ({
     "ytd",
     "365d",
   ];
-  const LEFT_COLUMN_WINDOWS: CompstatWindowId[] = ["7d", "28d"];
-  const RIGHT_COLUMN_WINDOWS: CompstatWindowId[] = ["ytd", "365d"];
   const orderForWindow = (id: CompstatWindowId) => {
     const index = ORDERED_WINDOWS.indexOf(id);
     return index === -1 ? Number.MAX_SAFE_INTEGER : index;
@@ -537,13 +533,6 @@ export const SummaryGrid = ({
   const sortedMetrics = [...metrics].sort(
     (a, b) => orderForWindow(a.id) - orderForWindow(b.id),
   );
-  const leftColumnMetrics = sortedMetrics.filter((metric) =>
-    LEFT_COLUMN_WINDOWS.includes(metric.id),
-  );
-  const rightColumnMetrics = sortedMetrics.filter((metric) =>
-    RIGHT_COLUMN_WINDOWS.includes(metric.id),
-  );
-
   const insightAvailability: Record<InsightType, boolean> = {
     map: incidents.length > 0,
     narrative: Boolean(focusNarrative),
@@ -702,7 +691,6 @@ export const SummaryGrid = ({
     );
   }
 
-  const hasMapSlot = Boolean(mapSlot);
   const allCollapsed = ORDERED_WINDOWS.every(
     (id) => collapsedCards[id],
   );
@@ -714,39 +702,7 @@ export const SummaryGrid = ({
       "365d": next,
     });
   };
-  const mapTemporarilyHidden = Boolean(activeInsight);
-  const renderMapSlot = () => {
-    if (!hasMapSlot) {
-      return null;
-    }
-    if (mapTemporarilyHidden) {
-      return (
-        <div className="hidden h-full w-full items-center justify-center rounded-2xl border border-white/10 bg-slate-900/40 text-sm text-white/60 lg:flex">
-          Map is hidden while an insight is open
-        </div>
-      );
-    }
-    return mapSlot;
-  };
-  const gridContent = hasMapSlot ? (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.5fr)_minmax(0,0.85fr)]">
-      <div className="order-1 grid gap-4 lg:order-none">
-        {leftColumnMetrics.map((metric) => renderMetricCard(metric))}
-      </div>
-      <div
-        className={clsx(
-          "order-2 flex h-full lg:order-none",
-          mapTemporarilyHidden && "pointer-events-none",
-        )}
-        aria-hidden={mapTemporarilyHidden}
-      >
-        {renderMapSlot()}
-      </div>
-      <div className="order-3 grid gap-4 lg:order-none">
-        {rightColumnMetrics.map((metric) => renderMetricCard(metric))}
-      </div>
-    </div>
-  ) : (
+  const gridContent = (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       {sortedMetrics.map((metric) => renderMetricCard(metric))}
     </div>
