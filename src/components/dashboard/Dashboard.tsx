@@ -16,6 +16,7 @@ import { TrendCard } from "./TrendCard";
 
 import { MethodologyCard } from "./MethodologyCard";
 import { CrimeCodeReferenceModal } from "./CrimeCodeReferenceModal";
+import { ValidationTableModal } from "./ValidationTableModal";
 
 
 
@@ -55,10 +56,18 @@ const BASE_FILTERS = {
   offenseCategory: "ALL",
 };
 
+const HERO_LINKS = [
+  { href: "#about-data", label: "About the Data" },
+  { href: "#crime-analysis", label: "Crime & Intelligence Analysis" },
+  { href: "#executive-insights", label: "Executive Insights" },
+  { href: "#data-science", label: "Data Science Lab" },
+];
+
 export const Dashboard = () => {
   const [filters, setFilters] = useState(BASE_FILTERS);
   const [mapExpanded, setMapExpanded] = useState(false);
   const [showReference, setShowReference] = useState(false);
+  const [showValidationTable, setShowValidationTable] = useState(false);
   const focusWaiters = useRef<Map<CompstatWindowId, Set<() => void>>>(
     new Map(),
   );
@@ -216,35 +225,51 @@ export const Dashboard = () => {
             TX CODES
           </button>
         </div>
-        <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
-          CompStat Command Brief
-        </h1>
-        <nav className="flex flex-wrap gap-3 text-sm text-white/70">
-          <a
-            href="#about-data"
-            className="rounded-full border border-white/15 px-4 py-2 uppercase tracking-[0.25em] transition hover:border-white/40 hover:text-white"
+        <div className="flex flex-col gap-3 rounded-2xl border border-white/15 bg-white/5 px-4 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
+          <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
+            CompStat Command Brief
+          </h1>
+          <nav
+            className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.3em] text-white/70"
+            aria-label="CompStat sections"
           >
-            About the Data
-          </a>
-          <a
-            href="#crime-analysis"
-            className="rounded-full border border-white/15 px-4 py-2 uppercase tracking-[0.25em] transition hover:border-white/40 hover:text-white"
+            {HERO_LINKS.map((link, index) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="group inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-2 transition hover:border-emerald-400/50 hover:text-white"
+              >
+                <span className="rounded-full bg-white/10 px-2 py-1 font-mono text-[0.55rem] tracking-widest text-white/60 group-hover:text-emerald-200">
+                  {(index + 1).toString().padStart(2, "0")}
+                </span>
+                <span className="text-[0.6rem]">{link.label}</span>
+              </a>
+            ))}
+          </nav>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setShowValidationTable(true)}
+            className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/80 transition hover:border-emerald-300 hover:text-white"
           >
-            Crime &amp; Intelligence Analysis
-          </a>
-          <a
-            href="#executive-insights"
-            className="rounded-full border border-white/15 px-4 py-2 uppercase tracking-[0.25em] transition hover:border-white/40 hover:text-white"
-          >
-            Executive Insights
-          </a>
-          <a
-            href="#data-science"
-            className="rounded-full border border-white/15 px-4 py-2 uppercase tracking-[0.25em] transition hover:border-white/40 hover:text-white"
-          >
-            Data Science Lab
-          </a>
-        </nav>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              aria-hidden="true"
+            >
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <path d="M7 9h10" />
+              <path d="M7 13h6" />
+              <path d="M7 17h4" />
+            </svg>
+            Validation table
+          </button>
+        </div>
       </header>
 
       <SummaryGrid
@@ -314,6 +339,12 @@ export const Dashboard = () => {
 
       {showReference ? (
         <CrimeCodeReferenceModal onClose={() => setShowReference(false)} />
+      ) : null}
+      {showValidationTable ? (
+        <ValidationTableModal
+          drilldown={data?.drilldown}
+          onClose={() => setShowValidationTable(false)}
+        />
       ) : null}
     </section>
   );
