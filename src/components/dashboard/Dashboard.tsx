@@ -225,12 +225,12 @@ export const Dashboard = () => {
             TX CODES
           </button>
         </div>
-        <div className="flex flex-col gap-3 rounded-2xl border border-white/15 bg-white/5 px-4 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-wrap items-center gap-4">
-            <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
+        <div className="w-full overflow-hidden rounded-2xl border border-white/15 bg-white/5 px-4 py-4 backdrop-blur">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h1 className="text-4xl font-semibold leading-tight md:text-5xl whitespace-nowrap">
               CompStat Command Brief
             </h1>
-            <div className="hidden h-6 w-px bg-white/20 md:block" />
+            <div className="hidden h-px flex-1 bg-white/15 md:block" />
             <nav
               className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.3em] text-white/70"
               aria-label="CompStat sections"
