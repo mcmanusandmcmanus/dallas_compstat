@@ -14,8 +14,14 @@ import type {
   LatLngExpression,
   Layer,
 } from "leaflet";
+import DeckGL from "@deck.gl/react";
+import { HeatmapLayer } from "@deck.gl/aggregation-layers";
+import { ScatterplotLayer } from "@deck.gl/layers";
+import { Map as MapLibre, type ViewState } from "react-map-gl/maplibre";
+import maplibregl from "maplibre-gl";
 import type { CompstatWindowId, IncidentFeature } from "@/lib/types";
 import "leaflet/dist/leaflet.css";
+import "maplibre-gl/dist/maplibre-gl.css";
 import clsx from "clsx";
 
 interface CrimeMapProps {
@@ -39,6 +45,20 @@ const WINDOW_SHORT_LABELS: Record<CompstatWindowId, string> = {
   "365d": "365D",
 };
 const WINDOW_ORDER: CompstatWindowId[] = ["7d", "28d", "ytd", "365d"];
+const GPU_HEATMAP_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_GPU_HEATMAP === "true";
+const GPU_HEATMAP_STYLE_URL =
+  process.env.NEXT_PUBLIC_GPU_HEATMAP_STYLE ??
+  "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
+
+const computeIncidentWeight = (incident: IncidentFeature) => {
+  const now = Date.now();
+  const timestamp = Date.parse(incident.occurred ?? "");
+  const ageDays = Number.isFinite(timestamp)
+    ? Math.max((now - timestamp) / 86_400_000, 0)
+    : 0;
+  return Number(Math.max(0.35, 1 - ageDays / 365).toFixed(2)) || 1;
+};
 
 const computeBounds = (
   incidents: IncidentFeature[],
@@ -113,6 +133,8 @@ export const CrimeMap = ({
   const hasIncidents = incidents.length > 0;
   const hasCluster = incidents.length > 1;
   const mapRef = useRef<LeafletMap | null>(null);
+  const [mapEngine, setMapEngine] = useState<"leaflet" | "deckgl">("leaflet");
+  const usingGpuHeat = GPU_HEATMAP_ENABLED && mapEngine === "deckgl";
   // Keep a reference to the heat layer so we can update/remove it
   const heatLayerRef = useRef<Layer | null>(null);
   const [heatEnabled, setHeatEnabled] = useState(true);
@@ -121,10 +143,14 @@ export const CrimeMap = ({
     [incidents],
   );
 
-  const center: LatLngExpression =
-    incidents.length === 0
-      ? DEFAULT_CENTER
-      : [incidents[0].latitude, incidents[0].longitude];
+  const centerPoint = useMemo<[number, number]>(
+    () =>
+      incidents.length === 0
+        ? (DEFAULT_CENTER as [number, number])
+        : [incidents[0].latitude, incidents[0].longitude],
+    [incidents],
+  );
+  const center: LatLngExpression = centerPoint;
 
   const boundsOptions: FitBoundsOptions | undefined = hasCluster
     ? { padding: [48, 48] }
@@ -147,20 +173,26 @@ export const CrimeMap = ({
     if (!incidents.length) {
       return [];
     }
-    const now = Date.now();
-    return incidents.map((incident) => {
-      const timestamp = Date.parse(incident.occurred ?? "");
-      const ageDays = Number.isFinite(timestamp)
-        ? Math.max((now - timestamp) / 86_400_000, 0)
-        : 0;
-      const decay = Math.max(0.35, 1 - ageDays / 365);
-      return [
-        incident.latitude,
-        incident.longitude,
-        Number(decay.toFixed(2)) || 1,
-      ];
-    });
+    return incidents.map((incident) => [
+      incident.latitude,
+      incident.longitude,
+      computeIncidentWeight(incident),
+    ]);
   }, [incidents]);
+  type DeckPoint = {
+    position: [number, number];
+    weight: number;
+    incident: IncidentFeature;
+  };
+  const deckPoints = useMemo<DeckPoint[]>(
+    () =>
+      incidents.map((incident) => ({
+        incident,
+        position: [incident.longitude, incident.latitude],
+        weight: computeIncidentWeight(incident),
+      })),
+    [incidents],
+  );
   const markerNodes = useMemo(
     () =>
       incidents.map((incident) => (
@@ -202,6 +234,15 @@ export const CrimeMap = ({
 
   // Add/update a heatmap layer using leaflet.heat (client-only plugin)
   useEffect(() => {
+    if (usingGpuHeat) {
+      if (heatLayerRef.current) {
+        try {
+          heatLayerRef.current.remove();
+        } catch {}
+        heatLayerRef.current = null;
+      }
+      return;
+    }
     const map = mapRef.current;
     if (!map) {
       return;
@@ -287,7 +328,95 @@ export const CrimeMap = ({
         heatLayerRef.current = null;
       }
     };
-  }, [heatPoints, heatEnabled]);
+  }, [heatPoints, heatEnabled, usingGpuHeat]);
+
+  const deckDefaultView = useMemo<ViewState>(() => {
+    const [latitude, longitude] = center as [number, number];
+    return {
+      latitude,
+      longitude,
+      zoom: hasCluster ? 11 : 10.5,
+      minZoom: 9,
+      maxZoom: 17,
+      bearing: 0,
+      pitch: 0,
+    };
+  }, [center, hasCluster]);
+  const [deckViewState, setDeckViewState] = useState<ViewState>(deckDefaultView);
+  useEffect(() => {
+    setDeckViewState((prev) => ({
+      ...prev,
+      latitude: deckDefaultView.latitude,
+      longitude: deckDefaultView.longitude,
+      zoom: deckDefaultView.zoom,
+    }));
+  }, [
+    deckDefaultView.latitude,
+    deckDefaultView.longitude,
+    deckDefaultView.zoom,
+  ]);
+  const deckLayers = useMemo(() => {
+    if (!deckPoints.length) {
+      return [];
+    }
+    const radius = isExpanded ? 70 : 50;
+    const layers = [];
+    if (heatEnabled) {
+      layers.push(
+        new HeatmapLayer<DeckPoint>({
+          id: "deckgl-crime-heat",
+          data: deckPoints,
+          getPosition: (d) => d.position,
+          getWeight: (d) => d.weight,
+          radiusPixels: radius,
+          intensity: 1,
+          threshold: 0.05,
+          aggregation: "SUM",
+          colorRange: [
+            [52, 211, 153, 60],
+            [16, 185, 129, 90],
+            [5, 150, 105, 140],
+            [4, 120, 87, 200],
+            [6, 95, 70, 255],
+          ],
+        }),
+      );
+    }
+    layers.push(
+      new ScatterplotLayer<DeckPoint>({
+        id: "deckgl-crime-points",
+        data: deckPoints,
+        getPosition: (d) => d.position,
+        getRadius: isExpanded ? 70 : 55,
+        radiusUnits: "meters",
+        stroked: true,
+        lineWidthMinPixels: 1,
+        getLineColor: [52, 211, 153, 220],
+        getFillColor: heatEnabled
+          ? [52, 211, 153, 90]
+          : [52, 211, 153, 160],
+        pickable: true,
+        autoHighlight: true,
+      }),
+    );
+    return layers;
+  }, [deckPoints, heatEnabled, isExpanded]);
+
+  const gpuTooltip = useCallback(
+    ({ object }: { object?: DeckPoint | null }) => {
+      if (!object) {
+        return null;
+      }
+      const { incident } = object;
+      const occurred = incident.occurred
+        ? new Date(incident.occurred).toLocaleString()
+        : "Unknown time";
+      return {
+        text: `${incident.offense}\n${incident.division} / Beat ${incident.beat}\n${occurred}`,
+      };
+    },
+    [],
+  );
 
   const handleRangeSelect = (id: CompstatWindowId) => {
     if (!onFocusRangeChange || id === focusRange) {
@@ -297,6 +426,55 @@ export const CrimeMap = ({
   };
 
   const heatToggleLabel = heatEnabled ? "Heatmap on" : "Heatmap off";
+  const gpuToggleLabel =
+    mapEngine === "deckgl" ? "Use classic heatmap" : "Use GPU heatmap";
+
+  const renderLeafletMap = () => (
+    <MapContainer
+      aria-label="Hot spot map for the selected CompStat window"
+      center={center}
+      bounds={bounds}
+      boundsOptions={boundsOptions}
+      zoom={11}
+      minZoom={10}
+      maxZoom={17}
+      scrollWheelZoom={false}
+      className={clsx(
+        "h-full w-full text-black transition duration-300",
+        !hasIncidents && "blur-sm opacity-30",
+      )}
+      ref={attachMapRef}
+    >
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      {markerNodes}
+    </MapContainer>
+  );
+
+  const renderDeckMap = () => (
+    <div className="relative h-full w-full">
+      <DeckGL
+        controller={{ doubleClickZoom: false, dragRotate: false }}
+        layers={deckLayers}
+        viewState={deckViewState}
+        onViewStateChange={({ viewState }) =>
+          setDeckViewState(viewState as ViewState)
+        }
+        getTooltip={gpuTooltip}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+      >
+        <MapLibre
+          mapLib={maplibregl}
+          reuseMaps
+          mapStyle={GPU_HEATMAP_STYLE_URL}
+          attributionControl={false}
+          style={{ width: "100%", height: "100%" }}
+        />
+      </DeckGL>
+    </div>
+  );
 
   return (
     <div
@@ -351,6 +529,25 @@ export const CrimeMap = ({
           >
             {heatToggleLabel}
           </button>
+          {GPU_HEATMAP_ENABLED ? (
+            <button
+              type="button"
+              onClick={() =>
+                setMapEngine((prev) =>
+                  prev === "leaflet" ? "deckgl" : "leaflet",
+                )
+              }
+              className={clsx(
+                "rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide transition",
+                mapEngine === "deckgl"
+                  ? "border-emerald-300/70 text-emerald-100 hover:bg-emerald-500/10"
+                  : "border-white/20 text-white/70 hover:border-white/40 hover:text-white",
+              )}
+              title="Toggle the deck.gl GPU-driven heatmap overlay"
+            >
+              {gpuToggleLabel}
+            </button>
+          ) : null}
           {onToggleExpand ? (
             <button
               type="button"
@@ -373,27 +570,7 @@ export const CrimeMap = ({
             <p>Adjust filters or try another range to populate the map.</p>
           </div>
         ) : null}
-        <MapContainer
-          aria-label="Hot spot map for the selected CompStat window"
-          center={center}
-          bounds={bounds}
-          boundsOptions={boundsOptions}
-          zoom={11}
-          minZoom={10}
-          maxZoom={17}
-          scrollWheelZoom={false}
-          className={clsx(
-            "h-full w-full text-black transition duration-300",
-            !hasIncidents && "blur-sm opacity-30",
-          )}
-          ref={attachMapRef}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          {markerNodes}
-        </MapContainer>
+        {usingGpuHeat ? renderDeckMap() : renderLeafletMap()}
       </div>
     </div>
   );

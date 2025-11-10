@@ -10,6 +10,7 @@ https://github.com/mcmanusandmcmanus/dallas_compstat
 - **Focus filters:** Snap the briefing to a single division or NIBRS category while keeping the remaining metrics in view.
 - **Trend intelligence:** Rolling averages and ±3σ Poisson bands surface statistically meaningful spikes instead of noisy daily swings.
 - **Spatial context:** Leaflet-powered map with the latest 350 geocoded incidents plus an analyst-ready narrative capsule.
+- **GPU heatmap (optional):** Enable a deck.gl-powered surface via `NEXT_PUBLIC_ENABLE_GPU_HEATMAP` without touching the layout.
 - **Render ready:** `render.yaml` + `.env.example` make it trivial to deploy on Render (or any Node platform).
 
 ## Tech Stack
@@ -38,6 +39,8 @@ cp .env.example .env.local
 ```
 
 - `SOCRATA_APP_TOKEN` *(optional but recommended)* — Register at https://www.dallasopendata.com/ to avoid anonymous rate limits.
+- `NEXT_PUBLIC_ENABLE_GPU_HEATMAP` *(optional, default `false`)* — Set to `true` to surface the GPU heatmap toggle inside the Crime Map.
+- `NEXT_PUBLIC_GPU_HEATMAP_STYLE` *(optional)* — Override the MapLibre style URL used by the GPU heatmap; defaults to Carto Dark Matter GL.
 
 ### 3. Run the dev server
 
