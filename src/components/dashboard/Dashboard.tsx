@@ -1,8 +1,6 @@
 "use client";
 
-
-
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import useSWR from "swr";
 
@@ -61,6 +59,9 @@ export const Dashboard = () => {
   const [filters, setFilters] = useState(BASE_FILTERS);
   const [mapExpanded, setMapExpanded] = useState(false);
   const [showReference, setShowReference] = useState(false);
+  const focusWaiters = useRef<Map<CompstatWindowId, Set<() => void>>>(
+    new Map(),
+  );
 
   const query = useMemo(() => {
     const params = new URLSearchParams({ focusRange: filters.focusRange });
@@ -78,6 +79,7 @@ export const Dashboard = () => {
     fetcher,
     SWR_OPTIONS,
   );
+  const dataFocusRange = data?.filters.focusRange;
 
   const availableDivisions = withAllOption(
     data?.filters.availableDivisions ?? [],
@@ -93,10 +95,73 @@ export const Dashboard = () => {
     [],
   );
 
+  const resolveWaiters = useCallback(
+    (range?: CompstatWindowId | null) => {
+      if (!range) {
+        return;
+      }
+      const waiters = focusWaiters.current.get(range);
+      if (!waiters?.size) {
+        return;
+      }
+      waiters.forEach((resolve) => resolve());
+      focusWaiters.current.delete(range);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    resolveWaiters(dataFocusRange);
+  }, [dataFocusRange, resolveWaiters]);
+
+  useEffect(() => {
+    if (!error) {
+      return;
+    }
+    focusWaiters.current.forEach((waiters) => {
+      waiters.forEach((resolve) => resolve());
+    });
+    focusWaiters.current.clear();
+  }, [error]);
+
+  useEffect(() => {
+    const currentWaiters = focusWaiters.current;
+    return () => {
+      currentWaiters.forEach((waiters) => {
+        waiters.forEach((resolve) => resolve());
+      });
+      currentWaiters.clear();
+    };
+  }, []);
+
+  const awaitFocusRange = useCallback(
+    (range: CompstatWindowId) =>
+      new Promise<void>((resolve) => {
+        const waiters = focusWaiters.current.get(range);
+        if (waiters) {
+          waiters.add(resolve);
+        } else {
+          focusWaiters.current.set(range, new Set([resolve]));
+        }
+      }),
+    [],
+  );
+
   const resetFilters = () => setFilters(BASE_FILTERS);
 
-  const handleFocusChange = (value: CompstatWindowId) =>
-    updateFilters({ focusRange: value });
+  const handleFocusChange = useCallback(
+    (value: CompstatWindowId) => {
+      if (value === filters.focusRange) {
+        return Promise.resolve();
+      }
+      updateFilters({ focusRange: value });
+      if (dataFocusRange === value) {
+        return Promise.resolve();
+      }
+      return awaitFocusRange(value);
+    },
+    [awaitFocusRange, dataFocusRange, filters.focusRange, updateFilters],
+  );
 
   const handleDivisionChange = (value: string) =>
     updateFilters({ division: value });

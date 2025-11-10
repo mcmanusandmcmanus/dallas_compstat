@@ -24,7 +24,7 @@ interface CrimeMapProps {
   onToggleExpand?: () => void;
   className?: string;
   focusRange?: CompstatWindowId;
-  onFocusRangeChange?: (range: CompstatWindowId) => void;
+  onFocusRangeChange?: (range: CompstatWindowId) => void | Promise<void>;
 }
 
 const DEFAULT_CENTER: LatLngExpression = [32.7767, -96.797];

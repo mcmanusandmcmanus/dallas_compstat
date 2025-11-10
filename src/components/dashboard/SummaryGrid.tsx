@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import clsx from "clsx";
 import type {
   CompstatMetric,
@@ -38,7 +38,7 @@ interface SummaryGridProps {
   incidentDivisions: BreakdownRow[];
   selectedOffenseCategory?: string;
   onSelectOffenseCategory?: (label: string) => void;
-  onFocusRangeChange?: (range: CompstatWindowId) => void;
+  onFocusRangeChange?: (range: CompstatWindowId) => void | Promise<void>;
   mapSlot?: ReactNode;
 }
 
@@ -306,6 +306,11 @@ const INSIGHT_ICONS: Record<InsightType, ReactNode> = {
   ),
 };
 
+const isPromiseLike = (value: unknown): value is Promise<unknown> =>
+  typeof value === "object" &&
+  value !== null &&
+  typeof (value as { then?: unknown }).then === "function";
+
 const SummaryCard = ({
   metric,
   highlighted,
@@ -477,11 +482,8 @@ export const SummaryGrid = ({
   const [insightMetricLabel, setInsightMetricLabel] = useState<
     string | undefined
   >(undefined);
-  const [pendingInsight, setPendingInsight] = useState<{
-    type: InsightType;
-    metricId: CompstatWindowId;
-    label: string;
-  } | null>(null);
+  const [focusSwitchTarget, setFocusSwitchTarget] =
+    useState<CompstatWindowId | null>(null);
   const [collapsedCards, setCollapsedCards] = useState<
     Record<CompstatWindowId, boolean>
   >({
@@ -491,44 +493,32 @@ export const SummaryGrid = ({
     "365d": false,
   });
 
-  const requestInsight = (
+  const requestInsight = async (
     type: InsightType,
     metric: CompstatMetric,
   ) => {
-    if (metric.id !== focusRange) {
-      if (onFocusRangeChange) {
-        setPendingInsight({
-          type,
-          metricId: metric.id,
-          label: metric.label,
-        });
-        onFocusRangeChange(metric.id);
-        return;
+    const requiresFocusSwitch =
+      metric.id !== focusRange && Boolean(onFocusRangeChange);
+    if (requiresFocusSwitch && onFocusRangeChange) {
+      setFocusSwitchTarget(metric.id);
+      try {
+        const maybePromise = onFocusRangeChange(metric.id);
+        if (isPromiseLike(maybePromise)) {
+          await maybePromise;
+        }
+      } catch (error) {
+        console.error("Unable to switch CompStat window for insight", error);
+      } finally {
+        setFocusSwitchTarget(null);
       }
     }
     setInsightMetricLabel(metric.label);
     setActiveInsight(type);
   };
 
-  useEffect(() => {
-    if (!pendingInsight) {
-      return;
-    }
-    if (pendingInsight.metricId !== focusRange) {
-      return;
-    }
-    if (isLoading) {
-      return;
-    }
-    setInsightMetricLabel(pendingInsight.label);
-    setActiveInsight(pendingInsight.type);
-    setPendingInsight(null);
-  }, [pendingInsight, focusRange, isLoading]);
-
   const closeInsight = () => {
     setActiveInsight(null);
     setInsightMetricLabel(undefined);
-    setPendingInsight(null);
   };
 
   const ORDERED_WINDOWS: CompstatWindowId[] = [
@@ -562,30 +552,31 @@ export const SummaryGrid = ({
     breakdown:
       (topOffenses?.length ?? 0) > 0 ||
       (divisionLeaders?.length ?? 0) > 0,
-  incidentSummary:
-    (incidentCategories?.length ?? 0) > 0 ||
-    (incidentDivisions?.length ?? 0) > 0,
-  incidentTable: incidents.length > 0,
-  drilldown: true,
-};
+    incidentSummary:
+      (incidentCategories?.length ?? 0) > 0 ||
+      (incidentDivisions?.length ?? 0) > 0,
+    incidentTable: incidents.length > 0,
+    drilldown: true,
+  };
   const defaultInsightLabel =
     metrics.find((entry) => entry.id === focusRange)?.label ??
     "Current focus window";
   const activeInsightLabel = insightMetricLabel ?? defaultInsightLabel;
 
-const buildInsightActions = (
-  metric: CompstatMetric,
-  options?: { onOpenDrilldown?: () => void; canOpenDrilldown?: boolean },
-): SummaryCardAction[] => {
-  const isSwitchingFocus =
-    pendingInsight?.metricId === metric.id;
-  const canOpenDrilldown = options?.canOpenDrilldown ?? false;
-  const actions: SummaryCardAction[] = [
+  const buildInsightActions = (
+    metric: CompstatMetric,
+    options?: { onOpenDrilldown?: () => void; canOpenDrilldown?: boolean },
+  ): SummaryCardAction[] => {
+    const isSwitchingFocus = focusSwitchTarget === metric.id;
+    const canOpenDrilldown = options?.canOpenDrilldown ?? false;
+    const actions: SummaryCardAction[] = [
       {
         id: "map",
         label: "Open hot spot map",
         icon: INSIGHT_ICONS.map,
-        onClick: () => requestInsight("map", metric),
+        onClick: () => {
+          void requestInsight("map", metric);
+        },
         disabled: isSwitchingFocus || !insightAvailability.map,
         tooltip: isSwitchingFocus
           ? "Switching focus window..."
@@ -597,7 +588,9 @@ const buildInsightActions = (
         id: "narrative",
         label: "Read focus narrative",
         icon: INSIGHT_ICONS.narrative,
-        onClick: () => requestInsight("narrative", metric),
+        onClick: () => {
+          void requestInsight("narrative", metric);
+        },
         disabled: isSwitchingFocus || !insightAvailability.narrative,
         tooltip: isSwitchingFocus
           ? "Switching focus window..."
@@ -609,28 +602,36 @@ const buildInsightActions = (
         id: "dayOfWeek",
         label: "View day-of-week pattern",
         icon: INSIGHT_ICONS.dayOfWeek,
-        onClick: () => requestInsight("dayOfWeek", metric),
+        onClick: () => {
+          void requestInsight("dayOfWeek", metric);
+        },
         disabled: isSwitchingFocus || !insightAvailability.dayOfWeek,
       },
       {
         id: "hourly",
         label: "View hourly cadence",
         icon: INSIGHT_ICONS.hourly,
-        onClick: () => requestInsight("hourly", metric),
+        onClick: () => {
+          void requestInsight("hourly", metric);
+        },
         disabled: isSwitchingFocus || !insightAvailability.hourly,
       },
       {
         id: "breakdown",
         label: "View offense & division breakdowns",
         icon: INSIGHT_ICONS.breakdown,
-        onClick: () => requestInsight("breakdown", metric),
+        onClick: () => {
+          void requestInsight("breakdown", metric);
+        },
         disabled: isSwitchingFocus || !insightAvailability.breakdown,
       },
       {
         id: "incidentSummary",
         label: "View incident summary",
         icon: INSIGHT_ICONS.incidentSummary,
-        onClick: () => requestInsight("incidentSummary", metric),
+        onClick: () => {
+          void requestInsight("incidentSummary", metric);
+        },
         disabled:
           isSwitchingFocus || !insightAvailability.incidentSummary,
       },
@@ -638,23 +639,25 @@ const buildInsightActions = (
         id: "incidentTable",
         label: "View incident log",
         icon: INSIGHT_ICONS.incidentTable,
-        onClick: () => requestInsight("incidentTable", metric),
+        onClick: () => {
+          void requestInsight("incidentTable", metric);
+        },
         disabled:
           isSwitchingFocus || !insightAvailability.incidentTable,
       },
-  ];
-  if (canOpenDrilldown && options?.onOpenDrilldown) {
-    actions.push({
-      id: "drilldown",
-      label: "View Validation Table drilldown",
-      icon: INSIGHT_ICONS.drilldown,
-      onClick: options.onOpenDrilldown,
-      disabled: isSwitchingFocus,
-      tooltip: "Open the detailed offense drilldown",
-    });
-  }
-  return actions;
-};
+    ];
+    if (canOpenDrilldown && options?.onOpenDrilldown) {
+      actions.push({
+        id: "drilldown",
+        label: "View Validation Table drilldown",
+        icon: INSIGHT_ICONS.drilldown,
+        onClick: options.onOpenDrilldown,
+        disabled: isSwitchingFocus,
+        tooltip: "Open the detailed offense drilldown",
+      });
+    }
+    return actions;
+  };
 
   const renderMetricCard = (metric: CompstatMetric) => {
     const hasDrilldown = Boolean(drilldown?.[metric.id]?.length);
